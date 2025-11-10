@@ -4,10 +4,24 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 
 export const appRouter = router({
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query(opts => {
+      // Temporary: Return dummy user for development without OAuth
+      if (!opts.ctx.user) {
+        return {
+          id: 1,
+          openId: "dev-user",
+          name: "Development User",
+          email: "dev@turafic.local",
+          role: "admin" as const,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          lastSignedIn: new Date(),
+        };
+      }
+      return opts.ctx.user;
+    }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -72,7 +86,7 @@ export const appRouter = router({
 
       const { variableCombinations } = await import("../drizzle/schema");
       const combos = await db.select().from(variableCombinations);
-      
+
       return combos.map(c => ({
         ...c,
         score: c.performanceScore ? c.performanceScore / 10000 : 0,
@@ -94,7 +108,7 @@ export const appRouter = router({
 
       const { rankings } = await import("../drizzle/schema");
       const { eq } = await import("drizzle-orm");
-      
+
       return await db.select().from(rankings).where(eq(rankings.campaignId, 1));
     }),
   }),
