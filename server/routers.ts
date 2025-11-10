@@ -17,12 +17,87 @@ export const appRouter = router({
     }),
   }),
 
-  // TODO: add feature routers here, e.g.
-  // todo: router({
-  //   list: protectedProcedure.query(({ ctx }) =>
-  //     db.getUserTodos(ctx.user.id)
-  //   ),
-  // }),
+  dashboard: router({
+    getStats: publicProcedure.query(async () => {
+      const { getDb } = await import("./db");
+      const db = await getDb();
+      if (!db) return { totalBots: 0, onlineBots: 0, activeCampaigns: 0, errorCount: 0, recentActivities: [] };
+
+      const { bots, campaigns } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+
+      const allBots = await db.select().from(bots);
+      const allCampaigns = await db.select().from(campaigns);
+
+      return {
+        totalBots: allBots.length,
+        onlineBots: allBots.filter(b => b.status === "online").length,
+        activeCampaigns: allCampaigns.filter(c => c.status === "active").length,
+        errorCount: allBots.filter(b => b.status === "error").length,
+        recentActivities: [
+          { id: 1, message: "캠페인 '갤럭시 S24' 시작", timestamp: new Date().toLocaleString() },
+          { id: 2, message: "봇 'rank1' 온라인", timestamp: new Date().toLocaleString() },
+        ],
+      };
+    }),
+  }),
+
+  campaigns: router({
+    list: publicProcedure.query(async () => {
+      const { getDb } = await import("./db");
+      const db = await getDb();
+      if (!db) return [];
+
+      const { campaigns } = await import("../drizzle/schema");
+      return await db.select().from(campaigns);
+    }),
+  }),
+
+  bots: router({
+    list: publicProcedure.query(async () => {
+      const { getDb } = await import("./db");
+      const db = await getDb();
+      if (!db) return [];
+
+      const { bots } = await import("../drizzle/schema");
+      return await db.select().from(bots);
+    }),
+  }),
+
+  abTesting: router({
+    getCombinations: publicProcedure.query(async () => {
+      const { getDb } = await import("./db");
+      const db = await getDb();
+      if (!db) return [];
+
+      const { variableCombinations } = await import("../drizzle/schema");
+      const combos = await db.select().from(variableCombinations);
+      
+      return combos.map(c => ({
+        ...c,
+        score: c.performanceScore ? c.performanceScore / 10000 : 0,
+        variableString: JSON.parse(c.variables || "{}"),
+      }));
+    }),
+    getGenerations: publicProcedure.query(async () => {
+      return [
+        { number: 4, progress: 85, bestScore: 0.92 },
+      ];
+    }),
+  }),
+
+  rankings: router({
+    getHistory: publicProcedure.query(async () => {
+      const { getDb } = await import("./db");
+      const db = await getDb();
+      if (!db) return [];
+
+      const { rankings } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      
+      return await db.select().from(rankings).where(eq(rankings.campaignId, 1));
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

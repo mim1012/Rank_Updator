@@ -1,33 +1,102 @@
-import { useAuth } from "@/_core/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
-import { Streamdown } from 'streamdown';
+import DashboardLayout from "@/components/DashboardLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { trpc } from "@/lib/trpc";
+import { Activity, Bot, CheckCircle, AlertCircle } from "lucide-react";
 
-/**
- * All content in this page are only for example, replace with your own feature implementation
- * When building pages, remember your instructions in Frontend Workflow, Frontend Best Practices, Design Guide and Common Pitfalls
- */
 export default function Home() {
-  // The userAuth hooks provides authentication state
-  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
-  let { user, loading, error, isAuthenticated, logout } = useAuth();
+  const { data: stats, isLoading } = trpc.dashboard.getStats.useQuery();
 
-  // If theme is switchable in App.tsx, we can implement theme toggling like this:
-  // const { theme, toggleTheme } = useTheme();
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
-  // Use APP_LOGO (as image src) and APP_TITLE if needed
+  const statCards = [
+    {
+      title: "전체 봇",
+      value: stats?.totalBots || 0,
+      icon: Bot,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+    },
+    {
+      title: "온라인 봇",
+      value: stats?.onlineBots || 0,
+      icon: CheckCircle,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+    },
+    {
+      title: "진행 중인 캠페인",
+      value: stats?.activeCampaigns || 0,
+      icon: Activity,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+    },
+    {
+      title: "에러 발생",
+      value: stats?.errorCount || 0,
+      icon: AlertCircle,
+      color: "text-red-600",
+      bgColor: "bg-red-50",
+    },
+  ];
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <main>
-        {/* Example: lucide-react for icons */}
-        <Loader2 className="animate-spin" />
-        Example Page
-        {/* Example: Streamdown for markdown rendering */}
-        <Streamdown>Any **markdown** content</Streamdown>
-        <Button variant="default">Example Button</Button>
-      </main>
-    </div>
+    <DashboardLayout>
+      <div className="space-y-8">
+        {/* Page Header */}
+        <div>
+          <h1 className="text-3xl font-bold">대시보드</h1>
+          <p className="text-gray-500 mt-1">Turafic 시스템 전체 현황</p>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {statCards.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <Card key={stat.title}>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600">
+                    {stat.title}
+                  </CardTitle>
+                  <div className={`p-2 rounded-lg ${stat.bgColor}`}>
+                    <Icon className={`w-5 h-5 ${stat.color}`} />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{stat.value}</div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Recent Activity */}
+        <Card>
+          <CardHeader>
+            <CardTitle>최근 활동</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {stats?.recentActivities?.map((activity: any) => (
+                <div key={activity.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <p className="font-medium">{activity.message}</p>
+                    <p className="text-sm text-gray-500">{activity.timestamp}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
   );
 }
