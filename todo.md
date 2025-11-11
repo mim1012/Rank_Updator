@@ -23,3 +23,10 @@
 - [ ] 기능 테스트
 - [ ] 체크포인트 저장
 - [ ] 배포 가이드 작성
+
+## Phase 0: AI Agentic 시스템 설계 (최우선)
+- [x] AI Agentic 시스템 아키텍처 설계
+- [x] 자율 에이전트 모듈 설계 (VariableAgent, BotAgent, CampaignAgent, AnalysisAgent)
+- [x] 에이전트 간 통신 프로토콜 정의
+- [x] 의사결정 알고리즘 설계
+- [x] 학습 데이터 수집 및 피드백 루프 설계
