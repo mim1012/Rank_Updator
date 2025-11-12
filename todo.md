@@ -81,3 +81,14 @@
 - [x] 로그 태그 추출
 - [x] Frida 후킹 스크립트 작성 (앱 전용)
 - [x] 실시간 모니터링 가이드 작성
+
+## 서버 API 리버스 엔지니어링
+- [x] 서버 연결 테스트
+- [x] 인증 방식 파악 (login_id, imei)
+- [x] 작업 받아오기 API 테스트 (POST /v1/mobile/keywords/naver/{loginId})
+- [x] 쿠키 받아오기 API 테스트 (POST /v1/mobile/data/naver/cookie)
+- [x] User-Agent 받아오기 API 테스트 (POST /v1/mobile/data/ua)
+- [x] 순위 보고 API 테스트 (POST /v1/mobile/keyword/naver/{id}/rank)
+- [x] 작업 완료 보고 API 테스트 (POST /v1/mobile/keyword/{id}/finish)
+- [x] 디바이스 정보 등록 API 테스트 (POST /v1/mobile/devices)
+- [x] API 명세서 작성 (요청/응답 포맷, 에러 코드)
