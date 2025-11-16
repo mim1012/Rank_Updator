@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node:*)",
+      "Bash(findstr:*)",
+      "Bash(git commit:*)",
+      "Bash(dir:*)",
+      "Bash(if exist node_modules.vite rmdir /s /q node_modules.vite)",
+      "Bash(move:*)",
+      "Bash(timeout 5 bash:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(npm --version)",
+      "Bash(gh pr merge:*)",
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run dev:windows:*)",
+      "Bash(nul)",
+      "Bash(npx cross-env:*)",
+      "Bash(timeout:*)",
+      "Bash(mysql --version:*)",
+      "Bash(npm install:*)",
+      "Bash(del \"D:\\Project\\Navertrafic\\client\\src\\pages\\Campaigns.tsx\")",
+      "Bash(psql --version:*)",
+      "Bash(psql:*)",
+      "Bash(npm run db:push:*)",
+      "Bash(npx drizzle-kit:*)",
+      "Bash(git add:*)",
+      "Bash(tree:*)",
+      "Bash(mkdir:*)",
+      "Bash(gh repo view:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

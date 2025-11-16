@@ -27,12 +27,13 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
-import { Home, Megaphone, Bot, FlaskConical, TrendingUp } from "lucide-react";
+import { Home, Megaphone, Bot, FlaskConical, TrendingUp, Sparkles } from "lucide-react";
 
 const menuItems = [
   { icon: Home, label: "홈", path: "/" },
   { icon: Megaphone, label: "캠페인", path: "/campaigns" },
   { icon: Bot, label: "봇 네트워크", path: "/bots" },
+  { icon: Sparkles, label: "변수 조합", path: "/variables" },
   { icon: FlaskConical, label: "A/B 테스트", path: "/ab-testing" },
   { icon: TrendingUp, label: "순위 변동", path: "/rankings" },
 ];

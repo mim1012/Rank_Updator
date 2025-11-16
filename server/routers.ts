@@ -179,6 +179,164 @@ export const appRouter = router({
     }),
   }),
 
+  variableCombinations: router({
+    list: publicProcedure
+      .input(z.object({
+        generation: z.number().optional(),
+        status: z.enum(['new', 'testing', 'elite', 'significant', 'deprecated']).optional(),
+      }))
+      .query(async ({ input }) => {
+        const { getDb } = await import("./db");
+        const db = await getDb();
+        if (!db) return [];
+
+        const { variableCombinations } = await import("../drizzle/schema");
+        const { eq, and } = await import("drizzle-orm");
+
+        let query = db.select().from(variableCombinations);
+
+        // 필터 적용
+        const conditions = [];
+        if (input.generation !== undefined) {
+          conditions.push(eq(variableCombinations.generation, input.generation));
+        }
+        if (input.status) {
+          conditions.push(eq(variableCombinations.status, input.status));
+        }
+
+        if (conditions.length > 0) {
+          query = query.where(and(...conditions)) as any;
+        }
+
+        const combos = await query;
+
+        return combos.map(c => ({
+          ...c,
+          score: c.performanceScore ? c.performanceScore / 10000 : 0,
+          variablesParsed: JSON.parse(c.variables || "{}"),
+        }));
+      }),
+
+    generateInitial: publicProcedure.mutation(async () => {
+      const { generateInitialCombinations } = await import("./services/variableCombinations");
+      const { getDb } = await import("./db");
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const { variableCombinations } = await import("../drizzle/schema");
+
+      const combinations = generateInitialCombinations();
+      await db.insert(variableCombinations).values(combinations);
+
+      return { success: true, count: combinations.length };
+    }),
+
+    evolve: publicProcedure
+      .input(z.object({
+        generation: z.number(),
+        populationSize: z.number().default(50),
+      }))
+      .mutation(async ({ input }) => {
+        const { evolveGeneration } = await import("./services/variableCombinations");
+
+        const nextGen = await evolveGeneration(input.generation, input.populationSize);
+
+        return {
+          success: true,
+          generation: input.generation + 1,
+          count: nextGen.length
+        };
+      }),
+
+    updateMetrics: publicProcedure
+      .input(z.object({
+        id: z.number(),
+        successRate: z.number().min(0).max(100),
+        avgRank: z.number().min(1).max(100),
+        captchaAvoidRate: z.number().min(0).max(100),
+        consistencyScore: z.number().min(0).max(100),
+      }))
+      .mutation(async ({ input }) => {
+        const { calculatePerformanceScore, classifyByPerformance } = await import("./services/variableCombinations");
+        const { getDb } = await import("./db");
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const { variableCombinations } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+
+        // 성능 점수 계산
+        const performanceScore = calculatePerformanceScore({
+          successRate: input.successRate,
+          avgRank: input.avgRank,
+          captchaAvoidRate: input.captchaAvoidRate,
+          consistencyScore: input.consistencyScore,
+        });
+
+        // 등급 분류 (임시로 testCount 10 사용)
+        const status = classifyByPerformance(performanceScore, 10);
+
+        // DB 업데이트
+        await db
+          .update(variableCombinations)
+          .set({
+            successRate: Math.round(input.successRate * 100),
+            avgRank: input.avgRank,
+            captchaAvoidRate: Math.round(input.captchaAvoidRate * 100),
+            performanceScore,
+            status,
+          })
+          .where(eq(variableCombinations.id, input.id));
+
+        return { success: true, id: input.id, performanceScore, status };
+      }),
+
+    delete: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const { getDb } = await import("./db");
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const { variableCombinations } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+
+        await db.delete(variableCombinations).where(eq(variableCombinations.id, input.id));
+
+        return { success: true, id: input.id };
+      }),
+
+    getGenerationStats: publicProcedure.query(async () => {
+      const { getDb } = await import("./db");
+      const db = await getDb();
+      if (!db) return [];
+
+      const { variableCombinations } = await import("../drizzle/schema");
+      const { sql } = await import("drizzle-orm");
+
+      // 세대별 통계 계산
+      const stats = await db
+        .select({
+          generation: variableCombinations.generation,
+          count: sql<number>`count(*)`,
+          avgScore: sql<number>`avg(${variableCombinations.performanceScore})`,
+          maxScore: sql<number>`max(${variableCombinations.performanceScore})`,
+          eliteCount: sql<number>`sum(case when ${variableCombinations.status} = 'elite' then 1 else 0 end)`,
+        })
+        .from(variableCombinations)
+        .groupBy(variableCombinations.generation)
+        .orderBy(variableCombinations.generation);
+
+      return stats.map(s => ({
+        generation: s.generation,
+        count: Number(s.count),
+        avgScore: s.avgScore ? Number(s.avgScore) / 10000 : 0,
+        maxScore: s.maxScore ? Number(s.maxScore) / 10000 : 0,
+        eliteCount: Number(s.eliteCount),
+      }));
+    }),
+  }),
+
   abTesting: router({
     getCombinations: publicProcedure.query(async () => {
       const { getDb } = await import("./db");
