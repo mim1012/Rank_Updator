@@ -2,6 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
+import { campaignRouter } from "./routers/campaign";
 import { z } from "zod";
 
 export const appRouter = router({
@@ -57,116 +58,8 @@ export const appRouter = router({
     }),
   }),
 
-  campaigns: router({
-    list: publicProcedure.query(async () => {
-      const { getDb } = await import("./db");
-      const db = await getDb();
-      if (!db) return [];
-
-      const { campaigns } = await import("../drizzle/schema");
-      return await db.select().from(campaigns);
-    }),
-
-    create: publicProcedure
-      .input(z.object({
-        name: z.string().min(1, "캠페인 이름은 필수입니다"),
-        platform: z.enum(["naver", "coupang"]),
-        keyword: z.string().min(1, "키워드는 필수입니다"),
-        productId: z.string().min(1, "상품 ID는 필수입니다"),
-      }))
-      .mutation(async ({ input }) => {
-        const { getDb } = await import("./db");
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-
-        const { campaigns } = await import("../drizzle/schema");
-
-        const [newCampaign] = await db.insert(campaigns).values({
-          name: input.name,
-          platform: input.platform,
-          keyword: input.keyword,
-          productId: input.productId,
-          status: "paused",
-        }).returning();
-
-        return newCampaign;
-      }),
-
-    update: publicProcedure
-      .input(z.object({
-        id: z.number(),
-        name: z.string().min(1).optional(),
-        platform: z.enum(["naver", "coupang"]).optional(),
-        keyword: z.string().min(1).optional(),
-        productId: z.string().min(1).optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const { getDb } = await import("./db");
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-
-        const { campaigns } = await import("../drizzle/schema");
-        const { eq } = await import("drizzle-orm");
-
-        const { id, ...updateData } = input;
-
-        await db.update(campaigns)
-          .set(updateData)
-          .where(eq(campaigns.id, id));
-
-        return { success: true, id };
-      }),
-
-    start: publicProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        const { getDb } = await import("./db");
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-
-        const { campaigns } = await import("../drizzle/schema");
-        const { eq } = await import("drizzle-orm");
-
-        await db.update(campaigns)
-          .set({ status: "active" })
-          .where(eq(campaigns.id, input.id));
-
-        return { success: true, id: input.id, status: "active" };
-      }),
-
-    stop: publicProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        const { getDb } = await import("./db");
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-
-        const { campaigns } = await import("../drizzle/schema");
-        const { eq } = await import("drizzle-orm");
-
-        await db.update(campaigns)
-          .set({ status: "paused" })
-          .where(eq(campaigns.id, input.id));
-
-        return { success: true, id: input.id, status: "paused" };
-      }),
-
-    delete: publicProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        const { getDb } = await import("./db");
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-
-        const { campaigns } = await import("../drizzle/schema");
-        const { eq } = await import("drizzle-orm");
-
-        await db.delete(campaigns)
-          .where(eq(campaigns.id, input.id));
-
-        return { success: true, id: input.id };
-      }),
-  }),
+  // Campaign management with Zero API integration (Phase 4)
+  campaigns: campaignRouter,
 
   bots: router({
     list: publicProcedure.query(async () => {
