@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Campaigns from "./pages/Campaigns";
+import CampaignDetail from "./pages/CampaignDetail";
 import VariableCombinations from "./pages/VariableCombinations";
 
 function Router() {
@@ -14,6 +15,7 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/campaigns"} component={Campaigns} />
+      <Route path={"/campaigns/:id"} component={CampaignDetail} />
       <Route path={"/variables"} component={VariableCombinations} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

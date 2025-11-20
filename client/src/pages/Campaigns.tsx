@@ -29,11 +29,13 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
-import { Plus, Play, Pause, Trash2, Edit2, Loader2 } from "lucide-react";
+import { Plus, Play, Pause, Trash2, Edit2, Loader2, Eye } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 
 export default function Campaigns() {
+  const [, setLocation] = useLocation();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<any>(null);
@@ -297,7 +299,16 @@ export default function Campaigns() {
                           <Button
                             size="sm"
                             variant="outline"
+                            onClick={() => setLocation(`/campaigns/${campaign.id}`)}
+                            title="상세보기"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => openEditDialog(campaign)}
+                            title="수정"
                           >
                             <Edit2 className="w-4 h-4" />
                           </Button>
@@ -307,6 +318,7 @@ export default function Campaigns() {
                               variant="outline"
                               onClick={() => handleStop(campaign.id)}
                               disabled={stopMutation.isPending}
+                              title="일시정지"
                             >
                               <Pause className="w-4 h-4" />
                             </Button>
@@ -316,6 +328,7 @@ export default function Campaigns() {
                               variant="outline"
                               onClick={() => handleStart(campaign.id)}
                               disabled={startMutation.isPending}
+                              title="시작"
                             >
                               <Play className="w-4 h-4" />
                             </Button>
@@ -326,6 +339,7 @@ export default function Campaigns() {
                             onClick={() => handleDelete(campaign.id)}
                             disabled={deleteMutation.isPending}
                             className="text-red-600 hover:text-red-700"
+                            title="삭제"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
