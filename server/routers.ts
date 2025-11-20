@@ -87,7 +87,7 @@ export const appRouter = router({
           keyword: input.keyword,
           productId: input.productId,
           status: "paused",
-        }).$returningId();
+        }).returning();
 
         return newCampaign;
       }),
@@ -370,6 +370,98 @@ export const appRouter = router({
 
       return await db.select().from(rankings).where(eq(rankings.campaignId, 1));
     }),
+  }),
+
+  // 순위 체크 APK용 API
+  rankCheck: router({
+    // 1. 봇 등록
+    registerBot: publicProcedure
+      .input(z.object({
+        deviceId: z.string().min(1),
+        deviceModel: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { registerBot } = await import("./services/rankCheckService");
+        const botId = await registerBot(
+          input.deviceId,
+          input.deviceModel || "Unknown"
+        );
+
+        if (!botId) {
+          throw new Error("Failed to register bot");
+        }
+
+        return { success: true, botId };
+      }),
+
+    // 2. 작업 요청 (APK → 서버)
+    getTask: publicProcedure
+      .input(z.object({
+        botId: z.number(),
+        loginId: z.string(),
+        imei: z.string(),
+      }))
+      .query(async ({ input }) => {
+        const { assignTask } = await import("./services/rankCheckService");
+        const task = await assignTask(input.botId, input.loginId, input.imei);
+
+        if (!task) {
+          return { success: false, message: "No tasks available" };
+        }
+
+        return { success: true, task };
+      }),
+
+    // 3. 순위 보고 (APK → 서버)
+    reportRank: publicProcedure
+      .input(z.object({
+        taskId: z.string(),
+        campaignId: z.number(),
+        rank: z.number(),
+        timestamp: z.string().transform(str => new Date(str)),
+        success: z.boolean(),
+        errorMessage: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { reportRank } = await import("./services/rankCheckService");
+
+        const success = await reportRank({
+          taskId: input.taskId,
+          campaignId: input.campaignId,
+          rank: input.rank,
+          timestamp: input.timestamp,
+          success: input.success,
+          errorMessage: input.errorMessage,
+        });
+
+        return { success };
+      }),
+
+    // 4. 작업 완료 (APK → 서버)
+    finishTask: publicProcedure
+      .input(z.object({
+        taskId: z.string(),
+        botId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        const { finishTask } = await import("./services/rankCheckService");
+        const success = await finishTask(input.taskId, input.botId);
+
+        return { success };
+      }),
+
+    // 5. 봇 상태 업데이트
+    updateBotStatus: publicProcedure
+      .input(z.object({
+        botId: z.number(),
+        status: z.enum(["online", "offline", "error"]),
+      }))
+      .mutation(async ({ input }) => {
+        const { updateBotStatus } = await import("./services/rankCheckService");
+        const success = await updateBotStatus(input.botId, input.status);
+
+        return { success };
+      }),
   }),
 });
 
