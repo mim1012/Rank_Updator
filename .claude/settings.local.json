@@ -31,7 +31,10 @@
       "Bash(git add:*)",
       "Bash(tree:*)",
       "Bash(mkdir:*)",
-      "Bash(gh repo view:*)"
+      "Bash(gh repo view:*)",
+      "Bash(cat:*)",
+      "Bash(gh api:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

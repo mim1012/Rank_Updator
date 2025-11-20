@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Naver Rank Checker</string>
+    <string name="status_ready">준비</string>
+    <string name="button_start_rank_check">순위 체크 시작</string>
+</resources>
