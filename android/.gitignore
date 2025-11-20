@@ -1,0 +1,20 @@
+# Gradle files
+.gradle/
+build/
+*.iml
+.idea/
+local.properties
+*.log
+
+# Android Studio
+.cxx/
+
+# APK files
+*.apk
+*.ap_
+*.aab
+
+# Generated files
+bin/
+gen/
+out/

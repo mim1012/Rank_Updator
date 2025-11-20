@@ -34,7 +34,16 @@
       "Bash(gh repo view:*)",
       "Bash(cat:*)",
       "Bash(gh api:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(chmod:*)",
+      "Bash(./gradlew:*)",
+      "Bash(gradle --version:*)",
+      "Bash(curl:*)",
+      "Bash(if [ -n \"$ANDROID_HOME\" ])",
+      "Bash(then echo \"ANDROID_HOME=$ANDROID_HOME\")",
+      "Bash(else echo \"ANDROID_HOME not set\")",
+      "Bash(fi)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []
