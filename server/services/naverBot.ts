@@ -27,9 +27,9 @@ export class NaverShoppingBot {
   private page: Page | null = null;
   private usePuppeteer: boolean = false;
   private puppeteer: any = null;
-  private mode: "puppeteer" | "http" | "advanced-http" = "http";
+  private mode: "puppeteer" | "http" | "advanced-http" | "minimal-http" = "http";
 
-  constructor(usePuppeteer: boolean = false, mode?: "puppeteer" | "http" | "advanced-http") {
+  constructor(usePuppeteer: boolean = false, mode?: "puppeteer" | "http" | "advanced-http" | "minimal-http") {
     this.usePuppeteer = usePuppeteer;
 
     // 모드 설정
@@ -45,7 +45,7 @@ export class NaverShoppingBot {
   /**
    * Set HTTP mode
    */
-  setMode(mode: "puppeteer" | "http" | "advanced-http"): void {
+  setMode(mode: "puppeteer" | "http" | "advanced-http" | "minimal-http"): void {
     this.mode = mode;
     console.log(`✅ Mode set to: ${mode}`);
   }
@@ -125,6 +125,9 @@ export class NaverShoppingBot {
 
       case "advanced-http":
         return this.checkRankWithAdvancedHttp(task, campaign, keywordData);
+
+      case "minimal-http":
+        return this.checkRankWithMinimalHttp(task, campaign, keywordData);
 
       case "http":
       default:
@@ -357,6 +360,9 @@ export class NaverShoppingBot {
     const client = new AdvancedHttpClient();
     const headers = generateAdvancedHeaders(task, keywordData);
 
+    // 실제 사용자처럼 네이버 홈 먼저 방문
+    await client.visitNaverHome(headers);
+
     console.log(`🔧 Advanced headers generated with 10 variables`);
     console.log(`   User-Agent: ${headers["user-agent"]?.substring(0, 50)}...`);
     console.log(`   sec-ch-ua-mobile: ${headers["sec-ch-ua-mobile"]}`);
@@ -370,6 +376,15 @@ export class NaverShoppingBot {
       try {
         const searchUrl = buildAdvancedSearchUrl(campaign.keyword, currentPage);
         console.log(`📄 Page ${currentPage}: ${searchUrl.substring(0, 80)}...`);
+
+        // 2페이지 이상은 Referer를 이전 페이지로
+        if (currentPage > 1) {
+          headers["referer"] = buildAdvancedSearchUrl(campaign.keyword, currentPage - 1);
+          headers["sec-fetch-site"] = "same-origin";
+        } else {
+          // 1페이지는 홈에서 왔으므로
+          headers["sec-fetch-site"] = "same-origin"; // 홈 방문 후이므로 same-origin
+        }
 
         // Advanced HTTP request
         const { status, data: html } = await client.get(searchUrl, headers);
@@ -410,6 +425,92 @@ export class NaverShoppingBot {
 
         // Delay between pages
         const delayMs = calculateAdvancedDelay(task.lowDelay);
+        await this.delay(delayMs);
+
+      } catch (error: any) {
+        console.error(`❌ Page ${currentPage} error:`, error.message);
+      }
+    }
+
+    console.log(`❌ Product not found in ${maxPages} pages`);
+    return -1;
+  }
+
+  /**
+   * Check rank using Minimal HTTP (Puppeteer 스타일 헤더)
+   *
+   * Puppeteer가 사용하는 최소한의 헤더만 사용합니다.
+   * 헤더가 많다고 좋은 게 아닙니다!
+   */
+  private async checkRankWithMinimalHttp(
+    task: Task,
+    campaign: Campaign,
+    keywordData: KeywordItem
+  ): Promise<number> {
+    const axios = (await import("axios")).default;
+    const {
+      generateMinimalHeaders,
+      buildMinimalSearchUrl,
+      calculateMinimalDelay,
+    } = await import("./minimalHttpEngine");
+
+    console.log(`🚀 Minimal HTTP mode: Puppeteer-style headers`);
+    console.log(`   Keyword: ${campaign.keyword}`);
+    console.log(`   Product ID: ${campaign.productId}`);
+
+    const headers = generateMinimalHeaders(task, keywordData);
+
+    console.log(`🔧 Minimal headers (Puppeteer 스타일):`);
+    console.log(`   user-agent: ${headers["user-agent"]?.substring(0, 50)}...`);
+    console.log(`   upgrade-insecure-requests: ${headers["upgrade-insecure-requests"]}`);
+    console.log(`   accept-language: ${headers["accept-language"]}`);
+    console.log(`   (Total: ${Object.keys(headers).length} headers only)`);
+
+    const maxPages = 10;
+    const productsPerPage = 40;
+
+    for (let currentPage = 1; currentPage <= maxPages; currentPage++) {
+      try {
+        const searchUrl = buildMinimalSearchUrl(campaign.keyword, currentPage);
+        console.log(`📄 Page ${currentPage}: ${searchUrl.substring(0, 80)}...`);
+
+        const response = await axios.get(searchUrl, {
+          headers,
+          timeout: 15000,
+          validateStatus: (status) => status < 500,
+        });
+
+        if (response.status !== 200) {
+          console.log(`⚠️  Page ${currentPage}: HTTP ${response.status}`);
+
+          if (response.status === 418) {
+            console.log(`❌ Bot detected (HTTP 418) - Even minimal headers failed`);
+          }
+
+          continue;
+        }
+
+        console.log(`✅ Page ${currentPage}: HTTP 200 (${response.data.length} bytes)`);
+
+        const html = response.data;
+        const nvMidPattern = new RegExp(`nvMid=${campaign.productId}`, "i");
+
+        if (nvMidPattern.test(html)) {
+          const nvMidMatches = html.match(/nvMid=(\d+)/g) || [];
+          const position = nvMidMatches.findIndex((match) =>
+            match.includes(campaign.productId)
+          );
+
+          if (position >= 0) {
+            const absoluteRank = (currentPage - 1) * productsPerPage + position + 1;
+            console.log(`✅ Found product at rank ${absoluteRank}!`);
+            return absoluteRank;
+          }
+        }
+
+        console.log(`   Product not found on page ${currentPage}`);
+
+        const delayMs = calculateMinimalDelay(task.lowDelay);
         await this.delay(delayMs);
 
       } catch (error: any) {

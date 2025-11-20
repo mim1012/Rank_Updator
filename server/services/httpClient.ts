@@ -64,6 +64,46 @@ export class AdvancedHttpClient {
   }
 
   /**
+   * 네이버 홈에 먼저 방문하여 쿠키 획득
+   * 실제 사용자처럼 행동하기 위해 필수
+   */
+  async visitNaverHome(headers: Record<string, string>): Promise<void> {
+    try {
+      console.log("🏠 네이버 모바일 홈 방문 중...");
+
+      const homeHeaders = {
+        ...headers,
+        "sec-fetch-site": "none", // 직접 입력
+        "sec-fetch-mode": "navigate",
+        "sec-fetch-dest": "document",
+      };
+      delete homeHeaders["referer"]; // 홈 방문 시 Referer 없음
+
+      const response = await this.client.get("https://m.naver.com/", {
+        headers: homeHeaders,
+        responseType: "text",
+      });
+
+      // Set-Cookie 확인
+      const setCookieHeaders = response.headers["set-cookie"];
+      console.log(`   홈 방문: HTTP ${response.status}`);
+      console.log(`   Set-Cookie 헤더: ${setCookieHeaders ? setCookieHeaders.length : 0}개`);
+      if (setCookieHeaders) {
+        setCookieHeaders.forEach((cookie: string, index: number) => {
+          console.log(`     [${index + 1}] ${cookie.split(';')[0]}`);
+        });
+      }
+      console.log(`   쿠키 저장됨: ${this.cookieJar.size}개`);
+
+      // 잠시 대기 (실제 사용자처럼)
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+    } catch (error: any) {
+      console.warn("⚠️  홈 방문 실패:", error.message);
+    }
+  }
+
+  /**
    * HTTP GET 요청
    *
    * @param url 요청 URL
