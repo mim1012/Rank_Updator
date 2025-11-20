@@ -16,7 +16,13 @@
       "Bash(npm run test:rank:*)",
       "Bash(tsx:*)",
       "Bash(npx tsx:*)",
-      "Bash(npm run test:advanced:*)"
+      "Bash(npm run test:advanced:*)",
+      "Bash(npm search:*)",
+      "Bash(python -m pip install:*)",
+      "Bash(python test-python-http.py:*)",
+      "Bash(dotnet --version:*)",
+      "Bash(csc:*)",
+      "Bash(dotnet script:*)"
     ],
     "deny": [],
     "ask": []

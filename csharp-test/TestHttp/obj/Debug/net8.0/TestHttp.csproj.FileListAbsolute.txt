@@ -1,0 +1,15 @@
+D:\Project\Navertrafic\csharp-test\TestHttp\bin\Debug\net8.0\TestHttp.exe
+D:\Project\Navertrafic\csharp-test\TestHttp\bin\Debug\net8.0\TestHttp.deps.json
+D:\Project\Navertrafic\csharp-test\TestHttp\bin\Debug\net8.0\TestHttp.runtimeconfig.json
+D:\Project\Navertrafic\csharp-test\TestHttp\bin\Debug\net8.0\TestHttp.dll
+D:\Project\Navertrafic\csharp-test\TestHttp\bin\Debug\net8.0\TestHttp.pdb
+D:\Project\Navertrafic\csharp-test\TestHttp\obj\Debug\net8.0\TestHttp.GeneratedMSBuildEditorConfig.editorconfig
+D:\Project\Navertrafic\csharp-test\TestHttp\obj\Debug\net8.0\TestHttp.AssemblyInfoInputs.cache
+D:\Project\Navertrafic\csharp-test\TestHttp\obj\Debug\net8.0\TestHttp.AssemblyInfo.cs
+D:\Project\Navertrafic\csharp-test\TestHttp\obj\Debug\net8.0\TestHttp.csproj.CoreCompileInputs.cache
+D:\Project\Navertrafic\csharp-test\TestHttp\obj\Debug\net8.0\TestHttp.sourcelink.json
+D:\Project\Navertrafic\csharp-test\TestHttp\obj\Debug\net8.0\TestHttp.dll
+D:\Project\Navertrafic\csharp-test\TestHttp\obj\Debug\net8.0\refint\TestHttp.dll
+D:\Project\Navertrafic\csharp-test\TestHttp\obj\Debug\net8.0\TestHttp.pdb
+D:\Project\Navertrafic\csharp-test\TestHttp\obj\Debug\net8.0\TestHttp.genruntimeconfig.cache
+D:\Project\Navertrafic\csharp-test\TestHttp\obj\Debug\net8.0\ref\TestHttp.dll

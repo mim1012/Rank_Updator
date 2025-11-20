@@ -84,6 +84,19 @@ export class NaverShoppingBot {
 
       this.page = await this.browser.newPage();
 
+      // Enable request interception for performance optimization
+      await this.page.setRequestInterception(true);
+
+      // Block images, stylesheets, and fonts for faster loading
+      this.page.on("request", (req) => {
+        const resourceType = req.resourceType();
+        if (["image", "stylesheet", "font", "media"].includes(resourceType)) {
+          req.abort();
+        } else {
+          req.continue();
+        }
+      });
+
       // Mobile viewport
       await this.page.setViewport({
         width: 360,
@@ -178,13 +191,19 @@ export class NaverShoppingBot {
       const searchUrl = buildSearchUrl(campaign.keyword, currentPage);
       console.log(`📄 Page ${currentPage}: Loading ${searchUrl.substring(0, 80)}...`);
 
-      await this.page.goto(searchUrl, { waitUntil: "networkidle2" });
+      // Balanced speed optimization: fast but not too fast to trigger rate limiting
+      await this.page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 10000 });
 
-      // Wait for content to load
-      await this.delay(2000); // Extra wait for dynamic content
+      // Wait for products to be rendered (balanced timeout)
+      try {
+        await this.page.waitForSelector('a[href*="nvMid="]', { timeout: 2000 });
+      } catch (e) {
+        // If products don't load in 2s, continue anyway
+        console.log(`   ⚠️  Selector timeout, continuing...`);
+      }
 
-      // Delay based on lowDelay variable
-      await this.delay(calculateDelay(task.lowDelay));
+      // Small delay to avoid rate limiting (200ms minimum)
+      await this.delay(Math.max(200, calculateDelay(task.lowDelay) / 2));
 
       // Debug: Check if page loaded successfully
       const pageTitle = await this.page.title();
