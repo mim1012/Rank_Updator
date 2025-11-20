@@ -37,3 +37,58 @@
 - [x] 성공/실패 판단 기준 명확화
 - [x] 신뢰도 점수 계산 알고리즘
 - [x] 실시간 로그 수집 파이프라인
+
+## LLM 통합 (AI Agentic 핵심)
+- [x] LLM 역할 정의 (자연어 이해, 상황 판단, 전략 수립)
+- [x] Orchestrator Agent에 LLM 통합
+- [x] Analysis Agent에 LLM 통합 (이상 패턴 분석)
+- [x] 프롬프트 엔지니어링 설계
+- [x] LLM 응답 파싱 및 실행 로직
+
+## ADB 모니터링 및 디버깅
+- [x] ADB 실시간 로그 모니터링 명령어
+- [x] WebView 디버깅 방법
+- [x] 네트워크 요청 추적
+- [x] 앱 상태 확인 명령어
+- [x] 스크린샷 캡처 자동화
+
+## APK 디컴파일 및 앱 전용 디버깅
+- [x] APK 디컴파일 도구 사용법 (JADX, APKTool, dex2jar)
+- [x] 앱 내부 구조 분석 (패키지, 클래스, 메서드)
+- [x] 로그 태그 및 메시지 추출
+- [x] 네트워크 통신 코드 분석
+- [x] WebView 설정 및 JavaScript 인터페이스 분석
+- [x] Frida 후킹 스크립트 작성 (앱 전용)
+- [x] 디버깅 포인트 및 브레이크포인트 설정
+
+## 봇-서버 실시간 통신 모니터링
+- [x] 봇-서버 통신 프로토콜 설계 (WebSocket, HTTP Polling, FCM)
+- [x] 서버 명령 구조 정의 (JSON 스키마)
+- [x] 봇 응답 구조 정의
+- [x] 실시간 통신 로그 수집 시스템
+- [x] 서버 명령 모니터링 대시보드
+- [x] Frida 후킹으로 통신 내용 캡처
+
+## 실제 APK 분석 (zu12, zru12, zcu12)
+- [x] APK 디컴파일 (JADX)
+- [x] 패키지 구조 및 클래스 분석
+- [x] 서버 통신 코드 분석 (URL, API 엔드포인트)
+- [x] 쿠키 관리 코드 분석
+- [x] 변수값 처리 로직 분석 (User-Agent, CW모드 등)
+- [x] URL 응답 처리 코드 분석
+- [x] 스크롤 로직 분석
+- [x] 체류시간 로직 분석
+- [x] 로그 태그 추출
+- [x] Frida 후킹 스크립트 작성 (앱 전용)
+- [x] 실시간 모니터링 가이드 작성
+
+## 서버 API 리버스 엔지니어링
+- [x] 서버 연결 테스트
+- [x] 인증 방식 파악 (login_id, imei)
+- [x] 작업 받아오기 API 테스트 (POST /v1/mobile/keywords/naver/{loginId})
+- [x] 쿠키 받아오기 API 테스트 (POST /v1/mobile/data/naver/cookie)
+- [x] User-Agent 받아오기 API 테스트 (POST /v1/mobile/data/ua)
+- [x] 순위 보고 API 테스트 (POST /v1/mobile/keyword/naver/{id}/rank)
+- [x] 작업 완료 보고 API 테스트 (POST /v1/mobile/keyword/{id}/finish)
+- [x] 디바이스 정보 등록 API 테스트 (POST /v1/mobile/devices)
+- [x] API 명세서 작성 (요청/응답 포맷, 에러 코드)
