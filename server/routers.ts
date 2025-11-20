@@ -3,6 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { campaignRouter } from "./routers/campaign";
+import { taskRouter } from "./routers/task";
 import { z } from "zod";
 
 export const appRouter = router({
@@ -264,6 +265,9 @@ export const appRouter = router({
       return await db.select().from(rankings).where(eq(rankings.campaignId, 1));
     }),
   }),
+
+  // Task queue system with bot execution (Phase 6)
+  tasks: taskRouter,
 
   // 순위 체크 APK용 API
   rankCheck: router({
