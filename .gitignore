@@ -105,3 +105,23 @@ temp/
 *.db
 *.sqlite
 *.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Coverage
+.coverage
+.coverage.*
+htmlcov/
+
+# Temporary files
+*.tmp
+.env.tmp
+
+# Legacy/unused folders
+/frontend/
+/nul
