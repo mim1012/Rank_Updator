@@ -153,3 +153,18 @@ export const naverCookies = pgTable("naverCookies", {
 
 export type NaverCookie = typeof naverCookies.$inferSelect;
 export type InsertNaverCookie = typeof naverCookies.$inferInsert;
+
+// Experiment Products table (for 100 Work Type Experiment)
+export const experimentProducts = pgTable("experimentProducts", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  productName: text("productName").notNull(),
+  keyword: varchar("keyword", { length: 255 }).notNull(),
+  sourceUrl: text("sourceUrl"),
+  position: integer("position"), // Rank position where found (around 200th)
+  productId: varchar("productId", { length: 100 }), // Naver product ID if available
+  isUsed: integer("isUsed").default(0).notNull(), // 0 = not used, 1 = used in experiment
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ExperimentProduct = typeof experimentProducts.$inferSelect;
+export type InsertExperimentProduct = typeof experimentProducts.$inferInsert;

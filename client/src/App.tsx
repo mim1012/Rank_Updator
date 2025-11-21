@@ -9,6 +9,7 @@ import Campaigns from "./pages/Campaigns";
 import CampaignDetail from "./pages/CampaignDetail";
 import VariableCombinations from "./pages/VariableCombinations";
 import { RealtimeMonitoring } from "./pages/RealtimeMonitoring";
+import ExperimentProducts from "./pages/ExperimentProducts";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -19,6 +20,7 @@ function Router() {
       <Route path={"/campaigns/:id"} component={CampaignDetail} />
       <Route path={"/variables"} component={VariableCombinations} />
       <Route path={"/realtime"} component={RealtimeMonitoring} />
+      <Route path={"/experiment-products"} component={ExperimentProducts} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

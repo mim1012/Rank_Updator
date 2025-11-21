@@ -269,6 +269,39 @@ export const appRouter = router({
   // Task queue system with bot execution (Phase 6)
   tasks: taskRouter,
 
+  // 100 Work Type Experiment - Product Collection
+  experimentProducts: router({
+    collect: publicProcedure
+      .input(z.object({
+        keyword: z.string().default("장난감"),
+        targetCount: z.number().default(100),
+      }))
+      .mutation(async ({ input }) => {
+        const { ProductCollector } = await import("./services/productCollector");
+        const collector = new ProductCollector();
+
+        try {
+          await collector.collectProducts(input.keyword, input.targetCount);
+          await collector.close();
+
+          return { success: true, message: `Successfully collected ${input.targetCount} products` };
+        } catch (error) {
+          await collector.close();
+          throw error;
+        }
+      }),
+
+    list: publicProcedure.query(async () => {
+      const { ProductCollector } = await import("./services/productCollector");
+      return await ProductCollector.getAllProducts();
+    }),
+
+    count: publicProcedure.query(async () => {
+      const { ProductCollector } = await import("./services/productCollector");
+      return await ProductCollector.getProductCount();
+    }),
+  }),
+
   // 순위 체크 APK용 API
   rankCheck: router({
     // 1. 봇 등록

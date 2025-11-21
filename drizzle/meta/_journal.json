@@ -15,6 +15,13 @@
       "when": 1763644254662,
       "tag": "0001_flippant_ultimatum",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1763706431315,
+      "tag": "0002_cultured_tag",
+      "breakpoints": true
     }
   ]
 }
