@@ -24,6 +24,13 @@ export { FullnameSearchTraffic } from "./fullnameSearch";
 export { ShoppingDiCategoryTraffic } from "./shoppingDiCategory";
 export { PacketFastTraffic } from "./packetFast";
 
+// Utils
+export {
+  getSmartStoreUrlByMid,
+  buildTrafficUrls,
+  runTrafficByKeywordAndMid,
+} from "./utils";
+
 // Default exports
 import { SmartstoreDirectTraffic } from "./smartstoreDirect";
 import { FullnameSearchTraffic } from "./fullnameSearch";
