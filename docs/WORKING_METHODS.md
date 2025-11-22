@@ -23,7 +23,29 @@
 > **중요**: URL 직접 접근은 트래픽으로 반영되지 않음!
 > 반드시 통합검색 또는 쇼핑탭에서 상품 검색 후 클릭해야 함
 
-### 2.1 통합검색DI (fullname_v4_parallel)
+### 2.1 MID 타겟팅 (midTarget) ⭐ 추천
+
+```bash
+npx tsx run-mid-target.ts "키워드" "MID" [횟수] [체류ms]
+```
+
+**경로**: 네이버 메인 → 키워드 타이핑 → DOM에서 MID 매칭 상품 클릭
+
+**특징**:
+- ✅ CAPTCHA 우회 (키워드 타이핑 방식)
+- ✅ 특정 MID 상품 타겟팅 가능
+- ⚠️ **조건**: 해당 MID가 검색 결과에 노출되어 있어야 함
+
+**테스트 결과**: 3/3 (100%) - 13.4초/회
+
+**사용 예시**:
+```bash
+npx tsx run-mid-target.ts "장난감" "10373753920" 10 3000
+```
+
+---
+
+### 2.2 통합검색DI (fullname_v4_parallel)
 
 ```bash
 npx tsx run-fullname-traffic-v4.ts

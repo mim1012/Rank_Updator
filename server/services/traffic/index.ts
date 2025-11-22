@@ -25,6 +25,7 @@ export { TrafficBase } from "./base";
 export { FullnameSearchTraffic } from "./fullnameSearch";
 export { ShoppingDiCategoryTraffic } from "./shoppingDiCategory";
 export { PacketFastTraffic } from "./packetFast";
+export { MidTargetTraffic } from "./midTarget";
 
 // Utils
 export {
@@ -36,11 +37,13 @@ export {
 import { FullnameSearchTraffic } from "./fullnameSearch";
 import { ShoppingDiCategoryTraffic } from "./shoppingDiCategory";
 import { PacketFastTraffic } from "./packetFast";
+import { MidTargetTraffic } from "./midTarget";
 
 export const TrafficMethods = {
   fullname: FullnameSearchTraffic,
   shoppingDi: ShoppingDiCategoryTraffic,
   packetFast: PacketFastTraffic,
+  midTarget: MidTargetTraffic,
 };
 
 export default TrafficMethods;
