@@ -20,23 +20,10 @@
 
 ## 2. 작동하는 트래픽 방식
 
-### 2.1 스마트스토어 직접 접근 ✅ NEW!
+> **중요**: URL 직접 접근은 트래픽으로 반영되지 않음!
+> 반드시 통합검색 또는 쇼핑탭에서 상품 검색 후 클릭해야 함
 
-```typescript
-// 스마트스토어 URL로 직접 접근
-await page.goto("https://smartstore.naver.com/store/products/10373753920");
-```
-
-**특징**:
-- 카탈로그 차단 우회 가능
-- 네이버 메인 먼저 접속 후 이동 권장
-- Rate Limit 주의 필요
-
-**테스트 결과**: 2025-11-22 ✅ 성공
-
----
-
-### 2.2 통합검색DI (fullname_v4_parallel)
+### 2.1 통합검색DI (fullname_v4_parallel)
 
 ```bash
 npx tsx run-fullname-traffic-v4.ts
@@ -195,81 +182,59 @@ https://cr.shopping.naver.com/adcr?x-ad-id=...&nvMid=...
 
 ## 8. CLI 스크립트
 
-### 8.1 스마트스토어 URL 직접 트래픽 ✅ NEW!
-
-```bash
-npx tsx run-smartstore-traffic.ts "https://smartstore.naver.com/xxx/products/123" 10 5000
-```
-
-**파라미터**:
-- `smartstore_url` (필수): 스마트스토어 상품 URL
-- `count` (선택): 실행 횟수 (기본: 5)
-- `dwell` (선택): 체류 시간 ms (기본: 5000)
-
-**테스트 결과**: 5/5 (100%) - 7.1초/회
-
----
-
-### 8.2 상품명 검색 → 트래픽 ✅ NEW!
-
-```bash
-npx tsx find-smartstore-by-name.ts "아이폰 케이스" 10 5000
-```
-
-**파라미터**:
-- `product_name` (필수): 검색할 상품명
-- `count` (선택): 실행 횟수 (기본: 5)
-- `dwell` (선택): 체류 시간 ms (기본: 5000)
-
-**동작**:
-1. 통합검색에서 상품명 검색
-2. 스마트스토어 링크 자동 추출
-3. 트래픽 실행
-
-**테스트 결과**: 3/3 (100%) - 8.7초/회
-
----
-
-### 8.3 MID로 스마트스토어 URL 찾기
-
-```bash
-npx tsx get-smartstore-url.ts 80917167574
-```
-
-**참고**: 카탈로그 상품(여러 판매처)은 스마트스토어 URL 찾기 불가
-
----
-
-### 8.4 키워드 + MID 트래픽 (느림)
+### 8.1 키워드 + MID 트래픽
 
 ```bash
 npx tsx run-traffic.ts "장난감" "80917167574" 10 5000
 ```
 
-**테스트 결과**: 1/3 (33%) - 127초/회 ⚠️ 느림
+**파라미터**:
+- `keyword` (필수): 검색 키워드
+- `mid` (필수): 네이버 상품 ID (nvMid)
+- `count` (선택): 실행 횟수 (기본: 1)
+- `dwell` (선택): 체류 시간 ms (기본: 5000)
+
+**동작**: 통합검색 → 쇼핑탭 클릭 → 상품 클릭
+
+---
+
+### 8.2 통합검색DI (fullname)
+
+```bash
+npx tsx run-fullname-traffic-v4.ts
+```
+
+**동작**: 통합검색 → 상품명 검색 → 쇼핑탭 → 상품 클릭
+
+---
+
+### 8.3 쇼핑DI 카테고리
+
+```bash
+npx tsx run-shopping-di-parallel.ts
+```
+
+**동작**: 쇼핑 메인 → 카테고리 → 상품 클릭
 
 ---
 
 ## 9. 성능 비교
 
-| 방식 | 스크립트 | 성공률 | 속도 | 권장 |
+| 방식 | 스크립트 | 성공률 | 속도 | 비고 |
 |------|----------|--------|------|------|
-| 스마트스토어 직접 | `run-smartstore-traffic.ts` | 100% | 7초/회 | ⭐⭐⭐ |
-| 상품명 검색 | `find-smartstore-by-name.ts` | 100% | 8.7초/회 | ⭐⭐⭐ |
-| 키워드+MID | `run-traffic.ts` | 33% | 127초/회 | ❌ |
-| 쇼핑DI 카테고리 | `run-shopping-di-parallel.ts` | 100%* | 3초/회 | ⚠️ 차단됨 |
+| 통합검색DI | `run-fullname-traffic-v4.ts` | 100% | ~10초/회 | ⭐ 추천 |
+| 쇼핑DI | `run-shopping-di-parallel.ts` | 100%* | ~3초/회 | Rate Limit 주의 |
+| 키워드+MID | `run-traffic.ts` | 가변 | ~10초/회 | 테스트용 |
 
-*쇼핑 차단 전 결과
+*쇼핑 Rate Limit 전 결과
 
 ---
 
 ## 10. 다음 단계
 
-1. [x] 스마트스토어 URL 버전 스크립트 작성
-2. [x] 상품명 검색 → 트래픽 스크립트 작성
-3. [ ] DB에 스마트스토어 URL 필드 추가
-4. [ ] Rate Limit 회피 로직 적용
-5. [ ] 새 상품으로 클린 테스트
+1. [ ] Rate Limit 회피 로직 적용
+2. [ ] 새 상품으로 클린 테스트
+3. [ ] 병렬 실행 최적화
 
 ---
 

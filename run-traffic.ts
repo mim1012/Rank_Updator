@@ -60,10 +60,6 @@ async function main() {
   console.log(`성공률: ${((result.success / count) * 100).toFixed(1)}%`);
   console.log(`소요시간: ${elapsed}초`);
 
-  if (result.smartstoreUrl) {
-    console.log(`\n스마트스토어 URL: ${result.smartstoreUrl}`);
-  }
-
   process.exit(0);
 }
 

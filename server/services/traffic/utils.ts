@@ -1,48 +1,11 @@
 /**
  * 트래픽 유틸리티 함수
+ *
+ * 중요: URL 직접 접근은 트래픽 반영 안 됨
+ * 반드시 통합검색 또는 쇼핑탭에서 상품 검색 후 클릭해야 함
  */
 
 import { connect } from "puppeteer-real-browser";
-
-/**
- * MID(nvMid)로 스마트스토어 URL 조회
- *
- * 카탈로그 페이지에서 스마트스토어 링크를 추출
- */
-export async function getSmartStoreUrlByMid(mid: string): Promise<string | null> {
-  const { browser, page } = await connect({
-    headless: true,
-    turnstile: true,
-  });
-
-  try {
-    // 네이버 메인 먼저 (세션)
-    await page.goto("https://www.naver.com/", { waitUntil: "domcontentloaded" });
-    await new Promise(r => setTimeout(r, 1000));
-
-    // 통합검색에서 MID로 검색
-    await page.goto(`https://search.naver.com/search.naver?query=${mid}`, {
-      waitUntil: "domcontentloaded",
-    });
-    await new Promise(r => setTimeout(r, 2000));
-
-    // 스마트스토어 링크 찾기
-    const smartstoreUrl = await page.evaluate(() => {
-      const links = Array.from(document.querySelectorAll("a"));
-      const smartstoreLink = links.find(a =>
-        a.href.includes("smartstore.naver.com") &&
-        a.href.includes("/products/")
-      );
-      return smartstoreLink?.href || null;
-    });
-
-    await browser.close();
-    return smartstoreUrl;
-  } catch (e) {
-    await browser.close();
-    return null;
-  }
-}
 
 /**
  * 키워드 + MID로 트래픽 실행 가능한 URL 생성
@@ -62,17 +25,19 @@ export function buildTrafficUrls(keyword: string, mid: string) {
 
 /**
  * 키워드 + MID로 바로 트래픽 실행
+ *
+ * 검색 → 쇼핑탭 클릭 → 상품 클릭 방식으로 트래픽 생성
  */
 export async function runTrafficByKeywordAndMid(
   keyword: string,
   mid: string,
   options: {
-    method?: 'smartstore' | 'shopping_di' | 'packet';
+    method?: 'shopping_di' | 'packet';
     dwellTime?: number;
     count?: number;
   } = {}
-): Promise<{ success: number; failed: number; smartstoreUrl?: string }> {
-  const { method = 'shopping_di', dwellTime = 5000, count = 1 } = options;
+): Promise<{ success: number; failed: number }> {
+  const { dwellTime = 5000, count = 1 } = options;
 
   const { browser, page } = await connect({
     headless: false,
@@ -82,7 +47,6 @@ export async function runTrafficByKeywordAndMid(
 
   let success = 0;
   let failed = 0;
-  let smartstoreUrl: string | undefined;
 
   try {
     // 1. 네이버 메인
@@ -91,23 +55,6 @@ export async function runTrafficByKeywordAndMid(
 
     for (let i = 0; i < count; i++) {
       try {
-        if (method === 'smartstore' && !smartstoreUrl) {
-          // 스마트스토어 URL 찾기 (첫 번째만)
-          await page.goto(`https://search.naver.com/search.naver?query=${mid}`, {
-            waitUntil: "domcontentloaded",
-          });
-          await new Promise(r => setTimeout(r, 2000));
-
-          smartstoreUrl = await page.evaluate(() => {
-            const links = Array.from(document.querySelectorAll("a"));
-            const link = links.find(a =>
-              a.href.includes("smartstore.naver.com") &&
-              a.href.includes("/products/")
-            );
-            return link?.href;
-          });
-        }
-
         // 2. 검색 실행
         await page.goto(`https://search.naver.com/search.naver?query=${encodeURIComponent(keyword)}`, {
           waitUntil: "domcontentloaded",
@@ -166,5 +113,5 @@ export async function runTrafficByKeywordAndMid(
 
   await browser.close();
 
-  return { success, failed, smartstoreUrl };
+  return { success, failed };
 }
