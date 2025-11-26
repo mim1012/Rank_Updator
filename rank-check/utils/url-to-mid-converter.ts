@@ -37,17 +37,7 @@ export async function urlToMid(
   url: string,
   page?: Page
 ): Promise<MidExtractionResult> {
-  // Fast path: Direct MID extraction
-  const directMid = extractMidFromUrl(url);
-  if (directMid) {
-    return {
-      mid: directMid,
-      source: 'direct',
-      originalUrl: url,
-    };
-  }
-
-  // Fallback: Smartstore → Catalog MID conversion
+  // 스마트스토어 URL은 무조건 카탈로그 MID 변환 필요
   if (isSmartStoreUrl(url) && page) {
     console.log(`   🔄 스마트스토어 URL → 카탈로그 MID 변환 중...`);
     const catalogMid = await getCatalogMidFromUrl(page, url);
@@ -59,6 +49,26 @@ export async function urlToMid(
         originalUrl: url,
       };
     }
+    // 변환 실패 시 direct extraction 시도
+    const directMid = extractMidFromUrl(url);
+    if (directMid) {
+      console.log(`   ⚠️  카탈로그 변환 실패, 스마트스토어 MID 사용: ${directMid}`);
+      return {
+        mid: directMid,
+        source: 'direct',
+        originalUrl: url,
+      };
+    }
+  }
+
+  // 카탈로그 URL 등: Direct MID extraction
+  const directMid = extractMidFromUrl(url);
+  if (directMid) {
+    return {
+      mid: directMid,
+      source: 'direct',
+      originalUrl: url,
+    };
   }
 
   // Failed
