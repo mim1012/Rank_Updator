@@ -51,7 +51,7 @@ export class ParallelRankChecker {
     try {
       // 독립적인 브라우저 인스턴스 생성
       const connection = await connect({
-        headless: false,
+        headless: false,  // Visible 모드 (네이버 봇 탐지 회피)
         turnstile: true,
         fingerprint: true,
       });
