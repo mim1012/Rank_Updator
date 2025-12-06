@@ -26,7 +26,7 @@ interface PageScanResult {
   firstRank: number | null;
 }
 
-const SAFE_DELAY_MS = 2600;
+const SAFE_DELAY_MS = 5000; // 2.6초 → 5초 (봇 탐지 회피)
 const SCROLL_STEPS = 18;
 const SCROLL_GAP_MS = 250;
 
@@ -84,30 +84,72 @@ export async function findAccurateRank(
     };
   }
 
-  // Pages 2-15: Use API intercept method
+  // Pages 2-15: Use API intercept method with DOM fallback
   for (let currentPage = 2; currentPage <= limit; currentPage++) {
     console.log(`📄 ${currentPage}페이지 상품 수집 (API 방식)`);
 
+    let products: ProductEntry[] | null = null;
+
+    // 1차: API 인터셉트 방식 시도
     const apiProducts = await goToPageAndGetAPIData(page, currentPage);
-    if (!apiProducts) {
-      console.log(`⚠️ ${currentPage}페이지 API 데이터 수집 실패`);
-      break;
+
+    if (apiProducts) {
+      products = apiProducts;
+    } else {
+      // 2차: API 실패 시 DOM 폴백
+      console.log(`⚠️ ${currentPage}페이지 API 실패, DOM 방식으로 폴백...`);
+
+      // 페이지 이동 시도 (URL 직접 변경)
+      try {
+        const currentUrl = page.url();
+        const newUrl = currentUrl.replace(/pagingIndex=\d+/, `pagingIndex=${currentPage}`);
+        if (newUrl === currentUrl) {
+          // pagingIndex가 없으면 추가
+          const separator = currentUrl.includes('?') ? '&' : '?';
+          await page.goto(`${currentUrl}${separator}pagingIndex=${currentPage}`, {
+            waitUntil: 'domcontentloaded',
+            timeout: 30000,
+          });
+        } else {
+          await page.goto(newUrl, {
+            waitUntil: 'domcontentloaded',
+            timeout: 30000,
+          });
+        }
+
+        await delay(SAFE_DELAY_MS);
+        await hydrateCurrentPage(page);
+
+        const domScan = await collectProductsOnPage(page, currentPage);
+        if (domScan.products.length > 0) {
+          products = domScan.products;
+          console.log(`   ✅ DOM 방식으로 ${products.length}개 상품 수집`);
+        }
+      } catch (error: any) {
+        console.log(`   ⚠️ DOM 폴백도 실패: ${error.message}`);
+      }
     }
 
-    const apiMatch = apiProducts.find(item => item.mid === normalizedMid);
-    if (apiMatch) {
+    // 둘 다 실패하면 다음 페이지로 (break 대신 continue)
+    if (!products || products.length === 0) {
+      console.log(`   ⚠️ ${currentPage}페이지 수집 실패, 다음 페이지로...`);
+      continue;
+    }
+
+    const match = products.find(item => item.mid === normalizedMid);
+    if (match) {
       console.log(
-        `✅ 순위 발견: 전체 ${apiMatch.totalRank}위 / 오가닉 ${apiMatch.organicRank > 0 ? apiMatch.organicRank : "-"}`
+        `✅ 순위 발견: 전체 ${match.totalRank}위 / 오가닉 ${match.organicRank > 0 ? match.organicRank : "-"}`
       );
       return {
         found: true,
-        mid: apiMatch.mid,
-        productName: apiMatch.productName,
-        totalRank: apiMatch.totalRank,
-        organicRank: apiMatch.organicRank,
-        isAd: apiMatch.isAd,
+        mid: match.mid,
+        productName: match.productName,
+        totalRank: match.totalRank,
+        organicRank: match.organicRank,
+        isAd: match.isAd,
         page: currentPage,
-        pagePosition: apiMatch.pagePosition,
+        pagePosition: match.pagePosition,
       };
     }
 
@@ -123,7 +165,7 @@ async function enterShoppingTab(page: Page, keyword: string): Promise<boolean> {
   try {
     await page.goto("https://www.naver.com/", {
       waitUntil: "domcontentloaded",
-      timeout: 20000,
+      timeout: 45000, // 저사양 PC 대응 (45초)
     });
   } catch (error) {
     console.log("⚠️ 네이버 진입 실패", error);
@@ -132,7 +174,7 @@ async function enterShoppingTab(page: Page, keyword: string): Promise<boolean> {
 
   await delay(SAFE_DELAY_MS);
 
-  const searchInput = await page.waitForSelector('input[name="query"]', { timeout: 7000 }).catch(() => null);
+  const searchInput = await page.waitForSelector('input[name="query"]', { timeout: 15000 }).catch(() => null); // 7초 → 15초
   if (!searchInput) {
     console.log("❌ 검색 입력창을 찾을 수 없습니다.");
     return false;
@@ -141,16 +183,29 @@ async function enterShoppingTab(page: Page, keyword: string): Promise<boolean> {
   await searchInput.click({ clickCount: 3 });
   await page.keyboard.type(keyword, { delay: 70 });
   await page.keyboard.press("Enter");
-  await delay(SAFE_DELAY_MS + 500);
+  await delay(8000); // 검색 결과 DOM 로딩 대기 (8초 - 저사양 PC 대응)
 
   console.log("🛒 쇼핑탭으로 이동");
-  const clicked = await page.evaluate(() => {
+  let clicked = await page.evaluate(() => {
     const link = document.querySelector<HTMLAnchorElement>('a[href*="search.shopping.naver.com"]');
     if (!link) return false;
     link.removeAttribute("target");
     link.click();
     return true;
   });
+
+  // 쇼핑탭 못 찾으면 2초 대기 후 재시도
+  if (!clicked) {
+    console.log("⚠️ 쇼핑탭 링크 못 찾음, 2초 대기 후 재시도...");
+    await delay(2000);
+    clicked = await page.evaluate(() => {
+      const link = document.querySelector<HTMLAnchorElement>('a[href*="search.shopping.naver.com"]');
+      if (!link) return false;
+      link.removeAttribute("target");
+      link.click();
+      return true;
+    });
+  }
 
   if (!clicked) {
     console.log("❌ 쇼핑탭 링크가 없습니다.");
@@ -218,17 +273,54 @@ async function collectProductsOnPage(page: Page, pageNumber: number): Promise<Pa
           }
         }
 
-        // Extract product name
+        // Extract product name - 부모 상품 카드에서 찾기
         let productName = "상품명 없음";
         const titleAttr = anchor.getAttribute("title") || anchor.getAttribute("aria-label");
         if (titleAttr) {
           productName = titleAttr.trim();
         } else {
-          const titleEl = anchor.querySelector('.product_title__Mmw2K, [class*="title"], strong');
-          if (titleEl && titleEl.textContent) {
-            productName = titleEl.textContent.replace(/\s+/g, " ").trim();
-          } else if (anchor.textContent) {
-            productName = anchor.textContent.replace(/\s+/g, " ").trim().substring(0, 50);
+          // 부모 요소에서 상품 카드 찾기 (최대 5단계)
+          let parent: Element | null = anchor;
+          for (let i = 0; i < 5 && parent; i++) {
+            parent = parent.parentElement;
+            if (!parent) break;
+
+            // 상품 카드 클래스 확인
+            const cls = parent.className || '';
+            if (cls.includes('product_item') || cls.includes('basicList_item') || cls.includes('adProduct_item')) {
+              // 상품 카드 내에서 상품명 찾기
+              const titleSelectors = [
+                '.product_title__Mmw2K',
+                '[class*="product_title"]',
+                '[class*="product_name"]',
+                '[class*="productName"]',
+                '[class*="basicList_title"]',
+                '[class*="title"]',
+                'strong',
+                'a[title]',
+              ];
+              for (const sel of titleSelectors) {
+                const found = parent.querySelector(sel);
+                if (found) {
+                  const text = found.getAttribute('title') || found.textContent;
+                  if (text && text.trim().length > 3) {
+                    productName = text.replace(/\s+/g, " ").trim().substring(0, 100);
+                    break;
+                  }
+                }
+              }
+              break;
+            }
+          }
+
+          // 부모에서 못 찾으면 기존 방식
+          if (productName === "상품명 없음") {
+            const titleEl = anchor.querySelector('.product_title__Mmw2K, [class*="title"], strong');
+            if (titleEl && titleEl.textContent) {
+              productName = titleEl.textContent.replace(/\s+/g, " ").trim();
+            } else if (anchor.textContent && anchor.textContent.trim().length > 5) {
+              productName = anchor.textContent.replace(/\s+/g, " ").trim().substring(0, 50);
+            }
           }
         }
 
@@ -366,13 +458,13 @@ async function goToPageAndGetAPIData(page: Page, targetPage: number): Promise<Pr
     return null;
   }
 
-  // Setup API response interceptor
+  // Setup API response interceptor (increased timeout for bot detection avoidance)
   const apiResponsePromise = page.waitForResponse(
     (response) => {
       const url = response.url();
       return url.includes('/api/search/all') && url.includes(`pagingIndex=${targetPage}`);
     },
-    { timeout: 15000 }
+    { timeout: 45000 } // 15초 → 45초 (네이버 응답 지연 대응)
   );
 
   // Click pagination button
@@ -438,6 +530,19 @@ async function goToPageAndGetAPIData(page: Page, targetPage: number): Promise<Pr
 
   } catch (error) {
     console.log(`   ⚠️ API 응답 타임아웃 또는 파싱 실패: ${error}`);
+    console.log(`   🔄 DOM 방식으로 재시도 중...`);
+
+    // Fallback: DOM 기반 수집
+    await delay(3000); // DOM 렌더링 대기
+    await hydrateCurrentPage(page);
+
+    const fallbackResult = await collectProductsOnPage(page, targetPage);
+    if (fallbackResult.products.length > 0) {
+      console.log(`   ✅ DOM 방식 성공: ${fallbackResult.products.length}개 상품`);
+      return fallbackResult.products;
+    }
+
+    console.log(`   ❌ DOM 방식도 실패`);
     return null;
   }
 }
