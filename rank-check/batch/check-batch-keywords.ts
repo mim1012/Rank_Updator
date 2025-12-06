@@ -371,6 +371,25 @@ async function main() {
     } catch (error: any) {
       console.error(`\n🚨 Batch ${batchNum} 에러:`, error.message);
       failedCount += batch.length;
+
+      // 에러 발생 시 배치의 모든 키워드를 pending으로 되돌림
+      console.log(`   🔄 에러 발생 - ${batch.length}개 키워드를 pending으로 복귀`);
+      for (const keywordRecord of batch) {
+        const currentRetryCount = keywordRecord.retry_count || 0;
+        const { error: updateError } = await supabase
+          .from('keywords_navershopping')
+          .update({
+            retry_count: currentRetryCount + 1,
+            status: 'pending',
+            worker_id: null,
+            started_at: null,
+          })
+          .eq('id', keywordRecord.id);
+
+        if (updateError) {
+          console.log(`   ⚠️ ${keywordRecord.keyword} pending 복귀 실패: ${updateError.message}`);
+        }
+      }
     }
 
     // 5. 배치 간 쿨다운
