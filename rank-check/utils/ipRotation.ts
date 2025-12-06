@@ -1,9 +1,9 @@
 /**
- * IP Rotation Module
+ * IP Rotation Module (IfIndex 방식)
  *
  * USB 테더링을 통한 IP 로테이션 기능
  * - 현재 IP 확인
- * - 테더링 어댑터 자동 감지
+ * - 테더링 어댑터 자동 감지 (IfIndex 사용 - 인코딩 문제 해결)
  * - 테더링 ON/OFF로 IP 변경
  */
 
@@ -35,36 +35,55 @@ export async function getCurrentIP(): Promise<string> {
   }
 }
 
-// ============ 테더링 어댑터 감지 ============
-export async function getTetheringAdapter(): Promise<string | null> {
+// ============ PowerShell 실행 ============
+async function execPowerShell(command: string): Promise<string> {
+  const { stdout } = await execAsync(
+    `powershell -NoProfile -Command "${command}"`,
+    { encoding: "utf8", windowsHide: true }
+  );
+  return stdout.trim();
+}
+
+// ============ 테더링 어댑터 감지 (IfIndex 방식) ============
+export interface AdapterInfo {
+  ifIndex: number;
+  name: string;
+  description: string;
+}
+
+export async function getTetheringAdapterIndex(): Promise<AdapterInfo | null> {
   try {
-    // PowerShell 스크립트 파일 방식 대신 간단한 명령어 사용
-    // 방법 1: 테더링 키워드로 검색
-    const { stdout: keywordResult } = await execAsync(
-      `powershell -NoProfile -Command "Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and ($_.InterfaceDescription -like '*NDIS*' -or $_.InterfaceDescription -like '*USB*' -or $_.InterfaceDescription -like '*Android*' -or $_.InterfaceDescription -like '*SAMSUNG*' -or $_.InterfaceDescription -like '*Tethering*') } | Select-Object -First 1 -ExpandProperty Name"`,
-      { encoding: "utf8", windowsHide: true }
+    // 방법 1: 테더링 키워드로 검색 (InterfaceIndex 반환)
+    const keywordResult = await execPowerShell(
+      `Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and ($_.InterfaceDescription -like '*NDIS*' -or $_.InterfaceDescription -like '*USB*' -or $_.InterfaceDescription -like '*Android*' -or $_.InterfaceDescription -like '*SAMSUNG*' -or $_.InterfaceDescription -like '*Tethering*') } | Select-Object -First 1 | ForEach-Object { $_.InterfaceIndex.ToString() + '|' + $_.Name + '|' + $_.InterfaceDescription }`
     );
 
-    if (keywordResult.trim()) {
-      console.log(`[IPRotation] 테더링 어댑터 감지: ${keywordResult.trim()}`);
-      return keywordResult.trim();
+    if (keywordResult && keywordResult.includes('|')) {
+      const [ifIndex, name, description] = keywordResult.split('|');
+      console.log(`[IPRotation] 테더링 어댑터 감지: IfIndex=${ifIndex}, ${name}`);
+      return { ifIndex: parseInt(ifIndex, 10), name, description };
     }
 
-    // 방법 2: 이더넷 N (N > 1) 패턴 검색
-    const { stdout: ethernetResult } = await execAsync(
-      `powershell -NoProfile -Command "Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and $_.Name -match '^(이더넷|Ethernet)\\s*[2-9]|^(이더넷|Ethernet)\\s*[1-9][0-9]+' } | Select-Object -First 1 -ExpandProperty Name"`,
-      { encoding: "utf8", windowsHide: true }
+    // 방법 2: 이더넷 N (N > 1) 패턴 검색 - IfIndex로만 비교
+    const ethernetResult = await execPowerShell(
+      `Get-NetAdapter | Where-Object { $_.Status -eq 'Up' } | Sort-Object InterfaceIndex -Descending | Select-Object -First 1 | ForEach-Object { $_.InterfaceIndex.ToString() + '|' + $_.Name + '|' + $_.InterfaceDescription }`
     );
 
-    if (ethernetResult.trim()) {
-      console.log(`[IPRotation] 테더링 어댑터 감지: ${ethernetResult.trim()}`);
-      return ethernetResult.trim();
+    if (ethernetResult && ethernetResult.includes('|')) {
+      const [ifIndex, name, description] = ethernetResult.split('|');
+      // 첫 번째 어댑터가 아닌 경우만 (테더링일 가능성)
+      const firstAdapter = await execPowerShell(
+        `Get-NetAdapter | Where-Object { $_.Status -eq 'Up' } | Sort-Object InterfaceIndex | Select-Object -First 1 -ExpandProperty InterfaceIndex`
+      );
+      if (ifIndex !== firstAdapter) {
+        console.log(`[IPRotation] 테더링 어댑터 감지: IfIndex=${ifIndex}, ${name}`);
+        return { ifIndex: parseInt(ifIndex, 10), name, description };
+      }
     }
 
     // Fallback: 연결된 어댑터 목록 출력
-    const { stdout: listOut } = await execAsync(
-      `powershell -NoProfile -Command "Get-NetAdapter | Where-Object { $_.Status -eq 'Up' } | Select-Object Name, InterfaceDescription | Format-Table -AutoSize"`,
-      { encoding: "utf8", windowsHide: true }
+    const listOut = await execPowerShell(
+      `Get-NetAdapter | Where-Object { $_.Status -eq 'Up' } | Select-Object InterfaceIndex, Name, InterfaceDescription | Format-Table -AutoSize`
     );
     console.log("[IPRotation] 테더링 어댑터를 찾을 수 없음");
     console.log("[IPRotation] 연결된 어댑터 목록:");
@@ -76,40 +95,30 @@ export async function getTetheringAdapter(): Promise<string | null> {
   }
 }
 
-// ============ 테더링 제어 ============
-export async function disableTethering(adapterName: string): Promise<void> {
+// ============ 테더링 제어 (IfIndex 방식) ============
+export async function disableTetheringByIndex(ifIndex: number): Promise<void> {
   try {
-    console.log(`[IPRotation] 테더링 비활성화: ${adapterName}`);
-    // PowerShell 사용 (유니코드 한글 인터페이스명 지원)
-    await execAsync(
-      `powershell -NoProfile -Command "Disable-NetAdapter -Name '${adapterName}' -Confirm:$false"`,
-      { encoding: "utf8", windowsHide: true }
-    );
+    console.log(`[IPRotation] 테더링 비활성화: IfIndex=${ifIndex}`);
+    await execPowerShell(`Get-NetAdapter -InterfaceIndex ${ifIndex} | Disable-NetAdapter -Confirm:$false`);
   } catch (error: any) {
-    // 이미 비활성화된 경우 무시
     if (!error.message.includes("already")) {
       throw new Error(`테더링 비활성화 실패: ${error.message}`);
     }
   }
 }
 
-export async function enableTethering(adapterName: string): Promise<void> {
+export async function enableTetheringByIndex(ifIndex: number): Promise<void> {
   try {
-    console.log(`[IPRotation] 테더링 활성화: ${adapterName}`);
-    // PowerShell 사용 (유니코드 한글 인터페이스명 지원)
-    await execAsync(
-      `powershell -NoProfile -Command "Enable-NetAdapter -Name '${adapterName}' -Confirm:$false"`,
-      { encoding: "utf8", windowsHide: true }
-    );
+    console.log(`[IPRotation] 테더링 활성화: IfIndex=${ifIndex}`);
+    await execPowerShell(`Get-NetAdapter -InterfaceIndex ${ifIndex} | Enable-NetAdapter -Confirm:$false`);
   } catch (error: any) {
-    // 이미 활성화된 경우 무시
     if (!error.message.includes("already")) {
       throw new Error(`테더링 활성화 실패: ${error.message}`);
     }
   }
 }
 
-// ============ IP 로테이션 ============
+// ============ IP 로테이션 (IfIndex 방식) ============
 export interface IPRotationResult {
   success: boolean;
   oldIP: string;
@@ -117,9 +126,9 @@ export interface IPRotationResult {
   error?: string;
 }
 
-export async function rotateIP(adapterName?: string): Promise<IPRotationResult> {
-  // 1. 어댑터 이름 확인
-  const adapter = adapterName || await getTetheringAdapter();
+export async function rotateIP(): Promise<IPRotationResult> {
+  // 1. 어댑터 IfIndex 확인
+  const adapter = await getTetheringAdapterIndex();
   if (!adapter) {
     return {
       success: false,
@@ -143,9 +152,9 @@ export async function rotateIP(adapterName?: string): Promise<IPRotationResult> 
     };
   }
 
-  // 3. 테더링 비활성화
+  // 3. 테더링 비활성화 (IfIndex 사용)
   try {
-    await disableTethering(adapter);
+    await disableTetheringByIndex(adapter.ifIndex);
     console.log(`[IPRotation] ${TETHERING_OFF_DELAY / 1000}초 대기...`);
     await sleep(TETHERING_OFF_DELAY);
   } catch (error: any) {
@@ -157,9 +166,9 @@ export async function rotateIP(adapterName?: string): Promise<IPRotationResult> 
     };
   }
 
-  // 4. 테더링 활성화
+  // 4. 테더링 활성화 (IfIndex 사용)
   try {
-    await enableTethering(adapter);
+    await enableTetheringByIndex(adapter.ifIndex);
     console.log(`[IPRotation] ${TETHERING_ON_DELAY / 1000}초 대기 (재연결)...`);
     await sleep(TETHERING_ON_DELAY);
   } catch (error: any) {

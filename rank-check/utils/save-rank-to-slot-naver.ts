@@ -60,16 +60,8 @@ export async function saveRankToSlotNaver(
     const productName = rankResult?.productName ?? null;
     const mid = rankResult?.mid ?? null;
 
-    // ✅ -1인 경우 slot_naver 저장 완전 스킵 (삭제만 처리)
-    if (currentRank === -1) {
-      console.log(`   ⏭️ -1 순위 → slot_naver 저장 스킵 (삭제만 처리)`);
-      return {
-        success: true,
-        action: 'updated', // 실제로는 저장 안 함
-      };
-    }
-
     let slotRecord: any = null;
+    const isRankNotFound = currentRank === -1;
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 4단계 우선순위로 slot_naver 레코드 검색
@@ -129,23 +121,30 @@ export async function saveRankToSlotNaver(
     const now = new Date().toISOString();
 
     if (slotRecord) {
-      // UPDATE 기존 레코드 (실제 스키마에 맞춤)
-      const { error: updateError } = await supabase
-        .from('slot_naver')
-        .update({
-          current_rank: currentRank,
-          keyword: keyword.keyword, // 키워드 업데이트
-          link_url: keyword.link_url, // URL 업데이트
-          updated_at: now,
-        })
-        .eq('id', slotRecord.id);
+      // ★ 순위권 밖(-1)이면 current_rank 업데이트 건너뛰기 (이전 순위 유지)
+      if (isRankNotFound) {
+        console.log(`   ⚠️ 순위권 밖(-1) - current_rank 유지, 히스토리만 저장`);
+        // UPDATE 건너뛰고 히스토리 저장으로 진행
+      } else {
+        // UPDATE 기존 레코드 (실제 스키마에 맞춤)
+        const { error: updateError } = await supabase
+          .from('slot_naver')
+          .update({
+            current_rank: currentRank,
+            start_rank: slotRecord.start_rank ?? currentRank, // ✅ null이면 현재 순위로 설정
+            keyword: keyword.keyword, // 키워드 업데이트
+            link_url: keyword.link_url, // URL 업데이트
+            updated_at: now,
+          })
+          .eq('id', slotRecord.id);
 
-      if (updateError) {
-        throw new Error(`slot_naver UPDATE 실패: ${updateError.message}`);
+        if (updateError) {
+          throw new Error(`slot_naver UPDATE 실패: ${updateError.message}`);
+        }
+
+        console.log(`   💾 slot_naver 업데이트: ID ${slotRecord.id}, 순위 ${currentRank}`);
       }
-
-      console.log(`   💾 slot_naver 업데이트: ID ${slotRecord.id}, 순위 ${currentRank}`);
-    } else {
+    } else if (!isRankNotFound) {
       // ④ INSERT 신규 레코드 (실제 스키마에 맞춤)
       const { data: insertedData, error: insertError } = await supabase
         .from('slot_naver')
@@ -175,6 +174,15 @@ export async function saveRankToSlotNaver(
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 히스토리 테이블 INSERT (append-only)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    // slotRecord가 없으면 히스토리 저장 불가 (slot_status_id 필요)
+    if (!slotRecord) {
+      console.log(`   ⚠️ slot_naver 레코드 없음 (순위권 밖) - 히스토리 저장 스킵`);
+      return {
+        success: true,
+        action: 'updated',
+      };
+    }
 
     // 숫자 필드 정규화 (empty string을 null로 변환)
     const toNumber = (val: any): number | null => {

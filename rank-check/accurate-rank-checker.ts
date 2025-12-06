@@ -1,4 +1,5 @@
 import type { Page } from "puppeteer";
+import { humanScroll, humanType } from "./utils/humanBehavior";
 
 export interface RankResult {
   found: boolean;
@@ -9,6 +10,7 @@ export interface RankResult {
   isAd: boolean;
   page: number;
   pagePosition: number;
+  blocked?: boolean;  // 차단 감지 여부
 }
 
 interface ProductEntry {
@@ -54,6 +56,20 @@ export async function findAccurateRank(
   const shoppingReady = await enterShoppingTab(page, normalizedKeyword);
   if (!shoppingReady) {
     console.log("❌ 쇼핑탭 진입에 실패했습니다.");
+    // 차단 여부 확인
+    if (await isBlocked(page)) {
+      return {
+        found: false,
+        mid: normalizedMid,
+        productName: '',
+        totalRank: -1,
+        organicRank: -1,
+        isAd: false,
+        page: 0,
+        pagePosition: 0,
+        blocked: true,
+      };
+    }
     return null;
   }
 
@@ -63,7 +79,17 @@ export async function findAccurateRank(
 
   if (await isBlocked(page)) {
     console.log("🛑 보안 페이지 감지됨 (CAPTCHA)");
-    return null;
+    return {
+      found: false,
+      mid: normalizedMid,
+      productName: '',
+      totalRank: -1,
+      organicRank: -1,
+      isAd: false,
+      page: 1,
+      pagePosition: 0,
+      blocked: true,
+    };
   }
 
   const scan = await collectProductsOnPage(page, 1);
@@ -86,15 +112,35 @@ export async function findAccurateRank(
 
   // Pages 2-15: Use API intercept method with DOM fallback
   for (let currentPage = 2; currentPage <= limit; currentPage++) {
+    // ★ 페이지 전환 전 안정화 딜레이 (1~2초 랜덤) - 봇 탐지 회피
+    const randomDelay = 1000 + Math.random() * 1000;
+    await delay(randomDelay);
+
     console.log(`📄 ${currentPage}페이지 상품 수집 (API 방식)`);
 
     let products: ProductEntry[] | null = null;
 
     // 1차: API 인터셉트 방식 시도
-    const apiProducts = await goToPageAndGetAPIData(page, currentPage);
+    const apiResult = await goToPageAndGetAPIData(page, currentPage);
 
-    if (apiProducts) {
-      products = apiProducts;
+    // ★ 차단 감지 시 즉시 리턴 (더 이상 시도하지 않음)
+    if (apiResult === BLOCKED_SIGNAL) {
+      console.log(`🛑 차단 감지됨 → 순위 체크 중단`);
+      return {
+        found: false,
+        mid: normalizedMid,
+        productName: '',
+        totalRank: -1,
+        organicRank: -1,
+        isAd: false,
+        page: currentPage,
+        pagePosition: 0,
+        blocked: true,
+      };
+    }
+
+    if (apiResult) {
+      products = apiResult;
     } else {
       // 2차: API 실패 시 DOM 폴백
       console.log(`⚠️ ${currentPage}페이지 API 실패, DOM 방식으로 폴백...`);
@@ -118,6 +164,23 @@ export async function findAccurateRank(
         }
 
         await delay(SAFE_DELAY_MS);
+
+        // ★ DOM 폴백 전에도 차단 체크
+        if (await isBlocked(page)) {
+          console.log(`   🛑 DOM 폴백 중 보안 페이지 감지 → 즉시 중단`);
+          return {
+            found: false,
+            mid: normalizedMid,
+            productName: '',
+            totalRank: -1,
+            organicRank: -1,
+            isAd: false,
+            page: currentPage,
+            pagePosition: 0,
+            blocked: true,
+          };
+        }
+
         await hydrateCurrentPage(page);
 
         const domScan = await collectProductsOnPage(page, currentPage);
@@ -130,8 +193,23 @@ export async function findAccurateRank(
       }
     }
 
-    // 둘 다 실패하면 다음 페이지로 (break 대신 continue)
+    // 둘 다 실패하면 → 차단일 가능성 체크 후 다음 페이지로
     if (!products || products.length === 0) {
+      // ★ 연속 실패 시 차단 체크
+      if (await isBlocked(page)) {
+        console.log(`   🛑 수집 실패 + 보안 페이지 감지 → 즉시 중단`);
+        return {
+          found: false,
+          mid: normalizedMid,
+          productName: '',
+          totalRank: -1,
+          organicRank: -1,
+          isAd: false,
+          page: currentPage,
+          pagePosition: 0,
+          blocked: true,
+        };
+      }
       console.log(`   ⚠️ ${currentPage}페이지 수집 실패, 다음 페이지로...`);
       continue;
     }
@@ -181,7 +259,8 @@ async function enterShoppingTab(page: Page, keyword: string): Promise<boolean> {
   }
 
   await searchInput.click({ clickCount: 3 });
-  await page.keyboard.type(keyword, { delay: 70 });
+  // ★ 자연스러운 타이핑 패턴 적용 (봇 탐지 회피)
+  await humanType(page, keyword);
   await page.keyboard.press("Enter");
 
   // 검색 결과 페이지 로딩 대기
@@ -231,10 +310,8 @@ async function enterShoppingTab(page: Page, keyword: string): Promise<boolean> {
 
 async function hydrateCurrentPage(page: Page): Promise<void> {
   await page.evaluate(() => window.scrollTo(0, 0));
-  for (let step = 0; step < SCROLL_STEPS; step++) {
-    await page.evaluate(() => window.scrollBy(0, 550));
-    await delay(SCROLL_GAP_MS);
-  }
+  // ★ 자연스러운 스크롤 패턴 적용 (봇 탐지 회피)
+  await humanScroll(page, SCROLL_STEPS * 550);
   await delay(600);
 }
 
@@ -443,8 +520,30 @@ async function goToPage(page: Page, targetPage: number, keyword: string): Promis
   return true;
 }
 
-async function goToPageAndGetAPIData(page: Page, targetPage: number): Promise<ProductEntry[] | null> {
-  // Find pagination button
+// 특수 반환값: 차단 감지 시
+const BLOCKED_SIGNAL = 'BLOCKED' as const;
+
+async function goToPageAndGetAPIData(page: Page, targetPage: number): Promise<ProductEntry[] | null | typeof BLOCKED_SIGNAL> {
+  // ★ 페이지네이션 영역이 로드될 때까지 대기 (최대 10초)
+  const paginationSelector = 'a.pagination_btn_page__utqBz, a[class*="pagination_btn"]';
+
+  try {
+    await page.waitForSelector(paginationSelector, {
+      timeout: 10000,
+      visible: true
+    });
+    console.log(`   ✅ 페이지네이션 DOM 로드 완료`);
+  } catch {
+    console.log(`   ⚠️ 페이지네이션 영역 로드 실패 (10초 타임아웃)`);
+    // 차단일 수 있으므로 isBlocked 체크
+    if (await isBlocked(page)) {
+      console.log(`   🛑 보안 페이지 감지 → 즉시 중단`);
+      return BLOCKED_SIGNAL;  // ★ 차단 신호 반환
+    }
+    return null;
+  }
+
+  // 이제 버튼 찾기
   const buttonExists = await page.evaluate((nextPage) => {
     const buttons = document.querySelectorAll('a.pagination_btn_page__utqBz, a[class*="pagination_btn"]');
     for (const btn of buttons) {
@@ -456,7 +555,7 @@ async function goToPageAndGetAPIData(page: Page, targetPage: number): Promise<Pr
   }, targetPage);
 
   if (!buttonExists) {
-    console.log(`⚠️ ${targetPage}페이지 버튼을 찾지 못했습니다.`);
+    console.log(`⚠️ ${targetPage}페이지 버튼이 없음 (마지막 페이지일 수 있음)`);
     return null;
   }
 

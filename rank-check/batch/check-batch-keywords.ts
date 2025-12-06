@@ -25,50 +25,25 @@ import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 import { ParallelRankChecker } from '../parallel/parallel-rank-checker';
 import { saveRankToSlotNaver, type KeywordRecord } from '../utils/save-rank-to-slot-naver';
+import { rotateIP } from '../utils/ipRotation';
 import * as fs from 'fs';
 import * as os from 'os';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 배치 설정 (PC별 자동 최적화)
+// 배치 설정
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const CPU_CORES = os.cpus().length;
 const TOTAL_RAM_GB = Math.round(os.totalmem() / (1024 ** 3));
 
-// CPU/RAM 기반 자동 배치 크기 계산
-function calculateOptimalBatchSize(): number {
-  // 환경변수 우선 (개별 PC 튜닝용)
-  if (process.env.BATCH_SIZE) {
-    return parseInt(process.env.BATCH_SIZE, 10);
-  }
-
-  // CPU + RAM 기반 자동 계산
-  // 브라우저 1개당 약 500MB~1GB RAM 사용
-  const ramBasedMax = Math.floor(TOTAL_RAM_GB / 2); // RAM의 절반만 사용
-  const cpuBasedMax = Math.floor(CPU_CORES / 2);    // CPU의 절반만 사용
-
-  // 둘 중 작은 값 사용, 최소 2개 최대 6개
-  return Math.max(2, Math.min(6, Math.min(ramBasedMax, cpuBasedMax)));
-}
-
-// CPU 기반 자동 쿨다운 계산
-function calculateOptimalCooldown(): number {
-  // 환경변수 우선
-  if (process.env.BATCH_COOLDOWN_MS) {
-    return parseInt(process.env.BATCH_COOLDOWN_MS, 10);
-  }
-
-  // 배치 크기가 클수록 쿨다운 길게
-  const batchSize = calculateOptimalBatchSize();
-  if (batchSize >= 5) return 20000;  // 5개 이상: 20초
-  if (batchSize >= 4) return 15000;  // 4개: 15초
-  if (batchSize >= 3) return 12000;  // 3개: 12초
-  return 10000;                       // 2개: 10초
-}
-
-const BATCH_SIZE = calculateOptimalBatchSize();
-const BATCH_COOLDOWN_MS = calculateOptimalCooldown();
+// 배치 크기: 2개 고정 (브라우저 2개 병렬)
+const BATCH_SIZE = parseInt(process.env.BATCH_SIZE || '2', 10);
+const BATCH_COOLDOWN_MS = parseInt(process.env.BATCH_COOLDOWN_MS || '10000', 10);
 const MAX_PAGES = parseInt(process.env.MAX_PAGES || '15', 10);
 const STALE_TIMEOUT_MS = 10 * 60 * 1000; // 10분 (타임아웃)
+
+// 차단 감지 설정
+const BLOCK_THRESHOLD = 3;  // 연속 N배치 차단 시 IP 로테이션
+const IP_ROTATION_COOLDOWN_MS = 15000;  // IP 로테이션 후 쿨다운 (15초)
 
 // 워커 ID 생성 (호스트명 + 랜덤)
 const WORKER_ID = `${os.hostname()}-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 5)}`;
@@ -199,9 +174,7 @@ async function main() {
   console.log(`🖥️  PC: ${os.hostname()}`);
   console.log(`💻 CPU: ${CPU_CORES}코어 | RAM: ${TOTAL_RAM_GB}GB`);
   console.log(`⚙️  배치 크기: ${BATCH_SIZE}개 | 쿨다운: ${BATCH_COOLDOWN_MS / 1000}초`);
-  if (process.env.BATCH_SIZE || process.env.BATCH_COOLDOWN_MS) {
-    console.log(`📝 .env 오버라이드 적용됨`);
-  }
+  console.log(`🛡️  차단 감지: 연속 ${BLOCK_THRESHOLD}배치 차단 시 IP 로테이션`);
   console.log(`🔧 Worker ID: ${WORKER_ID}`);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
@@ -238,6 +211,8 @@ async function main() {
   let successCount = 0;
   let failedCount = 0;
   let notFoundCount = 0;
+  let blockedCount = 0;
+  let consecutiveBlockedBatches = 0;  // 연속 차단 배치 카운터
 
   const startTime = Date.now();
 
@@ -264,6 +239,30 @@ async function main() {
 
       console.log(`🔍 병렬 순위 체크 시작 (${batch.length}개)\n`);
       const results = await checker.checkUrls(requests);
+
+      // 차단 감지 확인
+      const batchBlockedCount = results.filter(r => r.blocked === true).length;
+      if (batchBlockedCount > 0) {
+        blockedCount += batchBlockedCount;
+        consecutiveBlockedBatches++;
+        console.log(`\n🛑 차단 감지: ${batchBlockedCount}/${batch.length}개 (연속 ${consecutiveBlockedBatches}배치)`);
+
+        // 연속 N배치 차단 시 IP 로테이션
+        if (consecutiveBlockedBatches >= BLOCK_THRESHOLD) {
+          console.log(`\n🔄 연속 ${BLOCK_THRESHOLD}배치 차단 → IP 로테이션 실행...`);
+          const rotationResult = await rotateIP();
+          if (rotationResult.success) {
+            console.log(`✅ IP 변경 완료: ${rotationResult.oldIP} → ${rotationResult.newIP}`);
+          } else {
+            console.log(`⚠️ IP 로테이션 실패: ${rotationResult.error}`);
+          }
+          consecutiveBlockedBatches = 0;  // 카운터 리셋
+          console.log(`⏳ IP 로테이션 쿨다운 (${IP_ROTATION_COOLDOWN_MS / 1000}초)...`);
+          await delay(IP_ROTATION_COOLDOWN_MS);
+        }
+      } else {
+        consecutiveBlockedBatches = 0;  // 성공 시 카운터 리셋
+      }
 
       // 4. 결과 저장
       console.log(`\n💾 결과 저장 중...\n`);
@@ -409,6 +408,7 @@ async function main() {
   console.log(`총 처리: ${actualKeywords.length}개`);
   console.log(`✅ 순위 발견: ${successCount}개`);
   console.log(`❌ 미발견: ${notFoundCount}개`);
+  console.log(`🛑 차단: ${blockedCount}개`);
   console.log(`🚨 실패: ${failedCount}개`);
   console.log(`\n⏱️ 총 소요 시간: ${totalDuration}초 (${Math.round(totalDuration / 60)}분)`);
   console.log(`⚡ 평균 처리 속도: ${Math.round((actualKeywords.length / totalDuration) * 60)}개/분\n`);
@@ -428,6 +428,7 @@ async function main() {
       total: actualKeywords.length,
       success: successCount,
       notFound: notFoundCount,
+      blocked: blockedCount,
       failed: failedCount,
       duration: totalDuration,
     },

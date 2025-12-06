@@ -22,7 +22,9 @@
       "Bash(python test-python-http.py:*)",
       "Bash(dotnet --version:*)",
       "Bash(csc:*)",
-      "Bash(dotnet script:*)"
+      "Bash(dotnet script:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat(rank-check): 봇탐지 우회 강화 및 차단 감지 개선\n\n## 주요 변경사항\n\n### 1. 페이지네이션 타이밍 문제 해결\n- waitForSelector()로 DOM 로드 완료까지 대기 (최대 10초)\n- 페이지 전환 시 1~2초 랜덤 딜레이 추가\n\n### 2. 차단 감지 즉시 중단\n- 보안 페이지 감지 시 더 이상 다음 페이지 시도하지 않음\n- blocked: true 반환하여 IP 로테이션 트리거\n\n### 3. 고급 봇탐지 우회 기법 (humanBehavior.ts)\n- 베지어 곡선 마우스 이동\n- 자연스러운 스크롤 패턴 (300~600px 랜덤, 10% 멈춤)\n- 인간적 타이핑 (50~150ms 랜덤 딜레이)\n\n### 4. 순위권 밖(-1) 처리 개선\n- current_rank 업데이트 건너뛰기 (이전 순위 유지)\n- 히스토리는 정상 저장\n\n### 5. IP 로테이션 IfIndex 방식\n- 어댑터 이름 대신 InterfaceIndex 사용 (인코딩 문제 해결)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

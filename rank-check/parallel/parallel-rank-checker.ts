@@ -25,6 +25,7 @@ export interface ParallelRankResult {
   rank: RankResult | null;
   duration: number;
   error?: string;
+  blocked?: boolean;  // 차단 감지 여부
 }
 
 export class ParallelRankChecker {
@@ -93,9 +94,14 @@ export class ParallelRankChecker {
       await browser.close();
 
       const duration = Date.now() - startTime;
-      console.log(
-        `[${index + 1}] ⏱️  완료: ${Math.round(duration / 1000)}초`
-      );
+
+      // 차단 감지 여부 확인
+      const isBlocked = rankResult?.blocked === true;
+      if (isBlocked) {
+        console.log(`[${index + 1}] 🛑 차단 감지됨`);
+      } else {
+        console.log(`[${index + 1}] ⏱️  완료: ${Math.round(duration / 1000)}초`);
+      }
 
       return {
         url: request.url,
@@ -105,6 +111,7 @@ export class ParallelRankChecker {
         midSource: midResult.source,
         rank: rankResult,
         duration,
+        blocked: isBlocked,
       };
     } catch (error: any) {
       console.log(`[${index + 1}] ❌ 에러: ${error.message}`);
@@ -149,15 +156,15 @@ export class ParallelRankChecker {
 
     const startTime = Date.now();
 
-    // 브라우저 시작 시차 적용 (rate limiting 방지)
+    // 브라우저 시작 시차 적용 (랜덤 딜레이 0~1초)
     const promises = requests.map((request, index) => {
-      const staggerDelayMs = index * 1500; // 1.5초 간격
+      const randomDelayMs = Math.random() * 1000; // 0~1초 랜덤
 
       return new Promise<ParallelRankResult>((resolve) => {
         setTimeout(async () => {
           const result = await this.checkSingleUrl(request, index);
           resolve(result);
-        }, staggerDelayMs);
+        }, randomDelayMs);
       });
     });
 
