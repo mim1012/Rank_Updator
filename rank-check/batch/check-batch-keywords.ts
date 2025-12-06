@@ -3,9 +3,14 @@
  * keywords_navershopping 테이블 배치 순위 체크
  *
  * 기능:
- * - keywords_navershopping에서 모든 레코드 조회
+ * - keywords_navershopping에서 pending 상태의 레코드만 조회 (락 메커니즘)
  * - 10개씩 묶어서 병렬 순위 체크 (ParallelRankChecker 재사용)
  * - 결과를 slot_naver 및 slot_rank_naver_history에 저장
+ *
+ * 락 메커니즘:
+ * - status: pending → processing → 삭제
+ * - worker_id: 어떤 워커가 처리 중인지 식별
+ * - started_at: 타임아웃 판단용 (10분 초과 시 자동 복구)
  *
  * 사용법:
  *   npx tsx rank-check/batch/check-batch-keywords.ts [--limit=N] [--batches=N]
@@ -21,11 +26,17 @@ import { createClient } from '@supabase/supabase-js';
 import { ParallelRankChecker } from '../parallel/parallel-rank-checker';
 import { saveRankToSlotNaver, type KeywordRecord } from '../utils/save-rank-to-slot-naver';
 import * as fs from 'fs';
+import * as os from 'os';
 
-// 설정
-const BATCH_SIZE = 15; // 동시 처리 개수 (10 → 15 성능 향상)
-const BATCH_COOLDOWN_MS = 5000; // 배치 간 대기 시간 (10초 → 5초 성능 향상)
+// 배치 설정
+const CPU_CORES = os.cpus().length;
+const BATCH_SIZE = 3; // 1배치당 3개 브라우저 (고정)
+const BATCH_COOLDOWN_MS = 8000; // 배치 간 대기 시간 (6초 → 8초로 증가)
 const MAX_PAGES = 15; // 순위 체크 최대 페이지
+const STALE_TIMEOUT_MS = 10 * 60 * 1000; // 10분 (타임아웃)
+
+// 워커 ID 생성 (호스트명 + 랜덤)
+const WORKER_ID = `${os.hostname()}-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 5)}`;
 
 // Supabase 초기화
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -60,39 +71,106 @@ function parseArgs() {
   return { limit, batches };
 }
 
+// 타임아웃된 작업 복구 (10분 이상 processing 상태)
+async function recoverStaleKeywords(): Promise<number> {
+  const staleTime = new Date(Date.now() - STALE_TIMEOUT_MS).toISOString();
+
+  const { data, error } = await supabase
+    .from('keywords_navershopping')
+    .update({
+      status: 'pending',
+      worker_id: null,
+      started_at: null,
+    })
+    .eq('status', 'processing')
+    .lt('started_at', staleTime)
+    .select('id');
+
+  if (error) {
+    console.error('⚠️ 타임아웃 복구 실패:', error.message);
+    return 0;
+  }
+
+  return data?.length || 0;
+}
+
+// 작업 할당 (원자적 락)
+async function claimKeywords(claimLimit: number): Promise<any[]> {
+  // RPC 함수가 있으면 사용, 없으면 fallback
+  const { data: rpcData, error: rpcError } = await supabase.rpc('claim_keywords', {
+    p_worker_id: WORKER_ID,
+    p_limit: claimLimit,
+  });
+
+  if (!rpcError && rpcData) {
+    return rpcData;
+  }
+
+  // Fallback: RPC 함수가 없으면 update + select 방식 사용
+  console.log('⚠️ RPC 함수 없음, fallback 모드 사용');
+
+  // 먼저 pending 또는 NULL 상태인 것들의 ID를 조회
+  const { data: pendingIds, error: selectError } = await supabase
+    .from('keywords_navershopping')
+    .select('id')
+    .or('status.eq.pending,status.is.null') // pending 또는 NULL (기존 데이터 호환)
+    .order('id', { ascending: true })
+    .limit(claimLimit);
+
+  if (selectError || !pendingIds || pendingIds.length === 0) {
+    return [];
+  }
+
+  const ids = pendingIds.map((r) => r.id);
+
+  // 해당 ID들을 processing으로 업데이트하면서 select
+  const { data: claimed, error: updateError } = await supabase
+    .from('keywords_navershopping')
+    .update({
+      status: 'processing',
+      worker_id: WORKER_ID,
+      started_at: new Date().toISOString(),
+    })
+    .in('id', ids)
+    .or('status.eq.pending,status.is.null') // 중복 방지 + 기존 데이터 호환
+    .select();
+
+  if (updateError) {
+    console.error('❌ 작업 할당 실패:', updateError.message);
+    return [];
+  }
+
+  return claimed || [];
+}
+
 async function main() {
   const { limit, batches: batchLimit } = parseArgs();
 
   // 헤더 출력
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('📊 네이버 쇼핑 배치 순위 체크');
+  console.log(`🔧 Worker ID: ${WORKER_ID}`);
+  console.log(`💻 CPU 코어: ${CPU_CORES}개 → 배치 크기: ${BATCH_SIZE}개`);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
-  // 1. keywords_navershopping에서 모든 레코드 조회
-  console.log('1️⃣ keywords_navershopping 테이블 조회 중...\n');
-
-  let query = supabase
-    .from('keywords_navershopping')
-    .select('*')
-    .order('id', { ascending: true });
-
-  if (limit) {
-    query = query.limit(limit);
+  // 0. 타임아웃된 작업 복구
+  const recoveredCount = await recoverStaleKeywords();
+  if (recoveredCount > 0) {
+    console.log(`🔄 타임아웃된 작업 ${recoveredCount}개 복구됨\n`);
   }
 
-  const { data: keywords, error: fetchError } = await query;
+  // 1. keywords_navershopping에서 pending 상태 레코드만 할당받기
+  console.log('1️⃣ 작업 할당 중 (락 메커니즘)...\n');
 
-  if (fetchError) {
-    console.error('❌ 테이블 조회 실패:', fetchError.message);
-    process.exit(1);
-  }
+  const claimLimit = limit || (batchLimit ? batchLimit * BATCH_SIZE : 1000);
+  const keywords = await claimKeywords(claimLimit);
 
-  if (!keywords || keywords.length === 0) {
-    console.log('⚠️ 조회된 키워드가 없습니다.');
+  if (keywords.length === 0) {
+    console.log('⚠️ 할당받을 수 있는 키워드가 없습니다. (다른 워커가 처리 중이거나 대기열 비어있음)');
     return;
   }
 
-  console.log(`✅ ${keywords.length}개 키워드 조회 완료\n`);
+  console.log(`✅ ${keywords.length}개 키워드 할당 완료 (worker: ${WORKER_ID})\n`);
 
   // 배치 계산
   const totalBatches = Math.ceil(keywords.length / BATCH_SIZE);
@@ -182,16 +260,21 @@ async function main() {
                 console.log(`   ⛔ 재시도 한계 도달 - 대기열에서 삭제됨`);
               }
             } else {
-              // 재시도 카운트 증가 (삭제 X)
+              // 재시도 카운트 증가 + status를 pending으로 되돌림
               const { error: updateError } = await supabase
                 .from('keywords_navershopping')
-                .update({ retry_count: currentRetryCount + 1 })
+                .update({
+                  retry_count: currentRetryCount + 1,
+                  status: 'pending',
+                  worker_id: null,
+                  started_at: null,
+                })
                 .eq('id', keywordRecord.id);
 
               if (updateError) {
                 console.log(`   ⚠️ 재시도 카운트 업데이트 실패: ${updateError.message}`);
               } else {
-                console.log(`   🔄 재시도 예정 (${currentRetryCount + 1}/1) - 히스토리 미저장`);
+                console.log(`   🔄 재시도 예정 (${currentRetryCount + 1}/1) - 대기열로 복귀`);
               }
             }
           } else {
