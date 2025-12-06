@@ -28,11 +28,46 @@ import { saveRankToSlotNaver, type KeywordRecord } from '../utils/save-rank-to-s
 import * as fs from 'fs';
 import * as os from 'os';
 
-// 배치 설정 (효율 최적화)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 배치 설정 (PC별 자동 최적화)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const CPU_CORES = os.cpus().length;
-const BATCH_SIZE = 3; // 1배치당 3개 브라우저 (테스트 결과 CAPTCHA 미발생)
-const BATCH_COOLDOWN_MS = 15000; // 배치 간 대기 시간 (15초로 단축)
-const MAX_PAGES = 15; // 순위 체크 최대 페이지
+const TOTAL_RAM_GB = Math.round(os.totalmem() / (1024 ** 3));
+
+// CPU/RAM 기반 자동 배치 크기 계산
+function calculateOptimalBatchSize(): number {
+  // 환경변수 우선 (개별 PC 튜닝용)
+  if (process.env.BATCH_SIZE) {
+    return parseInt(process.env.BATCH_SIZE, 10);
+  }
+
+  // CPU + RAM 기반 자동 계산
+  // 브라우저 1개당 약 500MB~1GB RAM 사용
+  const ramBasedMax = Math.floor(TOTAL_RAM_GB / 2); // RAM의 절반만 사용
+  const cpuBasedMax = Math.floor(CPU_CORES / 2);    // CPU의 절반만 사용
+
+  // 둘 중 작은 값 사용, 최소 2개 최대 6개
+  return Math.max(2, Math.min(6, Math.min(ramBasedMax, cpuBasedMax)));
+}
+
+// CPU 기반 자동 쿨다운 계산
+function calculateOptimalCooldown(): number {
+  // 환경변수 우선
+  if (process.env.BATCH_COOLDOWN_MS) {
+    return parseInt(process.env.BATCH_COOLDOWN_MS, 10);
+  }
+
+  // 배치 크기가 클수록 쿨다운 길게
+  const batchSize = calculateOptimalBatchSize();
+  if (batchSize >= 5) return 20000;  // 5개 이상: 20초
+  if (batchSize >= 4) return 15000;  // 4개: 15초
+  if (batchSize >= 3) return 12000;  // 3개: 12초
+  return 10000;                       // 2개: 10초
+}
+
+const BATCH_SIZE = calculateOptimalBatchSize();
+const BATCH_COOLDOWN_MS = calculateOptimalCooldown();
+const MAX_PAGES = parseInt(process.env.MAX_PAGES || '15', 10);
 const STALE_TIMEOUT_MS = 10 * 60 * 1000; // 10분 (타임아웃)
 
 // 워커 ID 생성 (호스트명 + 랜덤)
@@ -157,11 +192,17 @@ async function claimKeywords(claimLimit: number): Promise<any[]> {
 async function main() {
   const { limit, batches: batchLimit } = parseArgs();
 
-  // 헤더 출력
+  // 헤더 출력 (PC 사양 및 최적화 설정)
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('📊 네이버 쇼핑 배치 순위 체크');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log(`🖥️  PC: ${os.hostname()}`);
+  console.log(`💻 CPU: ${CPU_CORES}코어 | RAM: ${TOTAL_RAM_GB}GB`);
+  console.log(`⚙️  배치 크기: ${BATCH_SIZE}개 | 쿨다운: ${BATCH_COOLDOWN_MS / 1000}초`);
+  if (process.env.BATCH_SIZE || process.env.BATCH_COOLDOWN_MS) {
+    console.log(`📝 .env 오버라이드 적용됨`);
+  }
   console.log(`🔧 Worker ID: ${WORKER_ID}`);
-  console.log(`💻 CPU 코어: ${CPU_CORES}개 → 배치 크기: ${BATCH_SIZE}개`);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
   // 0. 타임아웃된 작업 복구
