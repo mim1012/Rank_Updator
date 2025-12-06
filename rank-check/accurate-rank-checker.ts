@@ -183,21 +183,20 @@ async function enterShoppingTab(page: Page, keyword: string): Promise<boolean> {
   await searchInput.click({ clickCount: 3 });
   await page.keyboard.type(keyword, { delay: 70 });
   await page.keyboard.press("Enter");
-  await delay(8000); // 검색 결과 DOM 로딩 대기 (8초 - 저사양 PC 대응)
 
+  // 검색 결과 페이지 로딩 대기
+  console.log("⏳ 검색 결과 대기 중...");
+  try {
+    await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 });
+  } catch {
+    // SPA라서 네비게이션 이벤트 없을 수 있음
+  }
+  await delay(3000); // 추가 안정화
+
+  // 쇼핑탭 링크가 나타날 때까지 대기 (최대 10초, 2초 간격)
   console.log("🛒 쇼핑탭으로 이동");
-  let clicked = await page.evaluate(() => {
-    const link = document.querySelector<HTMLAnchorElement>('a[href*="search.shopping.naver.com"]');
-    if (!link) return false;
-    link.removeAttribute("target");
-    link.click();
-    return true;
-  });
-
-  // 쇼핑탭 못 찾으면 2초 대기 후 재시도
-  if (!clicked) {
-    console.log("⚠️ 쇼핑탭 링크 못 찾음, 2초 대기 후 재시도...");
-    await delay(2000);
+  let clicked = false;
+  for (let attempt = 1; attempt <= 5; attempt++) {
     clicked = await page.evaluate(() => {
       const link = document.querySelector<HTMLAnchorElement>('a[href*="search.shopping.naver.com"]');
       if (!link) return false;
@@ -205,6 +204,9 @@ async function enterShoppingTab(page: Page, keyword: string): Promise<boolean> {
       link.click();
       return true;
     });
+    if (clicked) break;
+    console.log(`   ⏳ 쇼핑탭 대기 중... (${attempt}/5)`);
+    await delay(2000);
   }
 
   if (!clicked) {
