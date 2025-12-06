@@ -60,8 +60,14 @@ export async function saveRankToSlotNaver(
     const productName = rankResult?.productName ?? null;
     const mid = rankResult?.mid ?? null;
 
-    // ✅ -1인 경우 히스토리 저장 스킵
-    const shouldSaveHistory = currentRank !== -1;
+    // ✅ -1인 경우 slot_naver 저장 완전 스킵 (삭제만 처리)
+    if (currentRank === -1) {
+      console.log(`   ⏭️ -1 순위 → slot_naver 저장 스킵 (삭제만 처리)`);
+      return {
+        success: true,
+        action: 'updated', // 실제로는 저장 안 함
+      };
+    }
 
     let slotRecord: any = null;
 
@@ -185,35 +191,31 @@ export async function saveRankToSlotNaver(
     const startRankDiff =
       startRank !== null && currentRank !== -1 ? currentRank - startRank : null;
 
-    // 히스토리 저장 조건부 처리
-    if (shouldSaveHistory) {
-      const { error: historyError } = await supabase
-        .from('slot_rank_naver_history')
-        .insert({
-          slot_status_id: slotRecord.id, // slot_naver의 id 참조
-          keyword: keyword.keyword,
-          link_url: keyword.link_url,
-          current_rank: currentRank,
-          start_rank: startRank, // 불변값 참조 (정규화됨, null이면 currentRank 사용)
-          previous_rank: previousRank, // 직전 순위 (정규화됨)
-          rank_change: rankChange, // 순위 변화량 (양수=하락, 음수=상승)
-          rank_diff: rankChange, // rank_change와 동일
-          start_rank_diff: startRankDiff, // 시작 순위 대비 변화
-          slot_sequence: toNumber(keyword.slot_sequence), // 정규화
-          slot_type: keyword.slot_type || '네이버쇼핑',
-          customer_id: keyword.customer_id || 'master',
-          rank_date: now, // 순위 체크 날짜
-          created_at: now,
-        });
+    // 히스토리 테이블에 저장 (항상 - -1은 이미 위에서 리턴됨)
+    const { error: historyError } = await supabase
+      .from('slot_rank_naver_history')
+      .insert({
+        slot_status_id: slotRecord.id, // slot_naver의 id 참조
+        keyword: keyword.keyword,
+        link_url: keyword.link_url,
+        current_rank: currentRank,
+        start_rank: startRank, // 불변값 참조 (정규화됨, null이면 currentRank 사용)
+        previous_rank: previousRank, // 직전 순위 (정규화됨)
+        rank_change: rankChange, // 순위 변화량 (양수=하락, 음수=상승)
+        rank_diff: rankChange, // rank_change와 동일
+        start_rank_diff: startRankDiff, // 시작 순위 대비 변화
+        slot_sequence: toNumber(keyword.slot_sequence), // 정규화
+        slot_type: keyword.slot_type || '네이버쇼핑',
+        customer_id: keyword.customer_id || 'master',
+        rank_date: now, // 순위 체크 날짜
+        created_at: now,
+      });
 
-      if (historyError) {
-        // 히스토리 저장 실패는 경고만 (메인 데이터는 이미 저장됨)
-        console.warn(`   ⚠️ 히스토리 저장 실패: ${historyError.message}`);
-      } else {
-        console.log(`   📊 히스토리 추가 완료`);
-      }
+    if (historyError) {
+      // 히스토리 저장 실패는 경고만 (메인 데이터는 이미 저장됨)
+      console.warn(`   ⚠️ 히스토리 저장 실패: ${historyError.message}`);
     } else {
-      console.log(`   ⏭️ -1 순위 → 히스토리 저장 스킵`);
+      console.log(`   📊 히스토리 추가 완료`);
     }
 
     return {

@@ -460,13 +460,13 @@ async function goToPageAndGetAPIData(page: Page, targetPage: number): Promise<Pr
     return null;
   }
 
-  // Setup API response interceptor (increased timeout for bot detection avoidance)
+  // Setup API response interceptor (효율 최적화: 30초로 단축)
   const apiResponsePromise = page.waitForResponse(
     (response) => {
       const url = response.url();
       return url.includes('/api/search/all') && url.includes(`pagingIndex=${targetPage}`);
     },
-    { timeout: 45000 } // 15초 → 45초 (네이버 응답 지연 대응)
+    { timeout: 30000 } // 30초 (DOM 폴백 빠르게 전환)
   );
 
   // Click pagination button

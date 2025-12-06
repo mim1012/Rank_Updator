@@ -28,10 +28,10 @@ import { saveRankToSlotNaver, type KeywordRecord } from '../utils/save-rank-to-s
 import * as fs from 'fs';
 import * as os from 'os';
 
-// 배치 설정
+// 배치 설정 (효율 최적화)
 const CPU_CORES = os.cpus().length;
-const BATCH_SIZE = 3; // 1배치당 3개 브라우저 (고정)
-const BATCH_COOLDOWN_MS = 8000; // 배치 간 대기 시간 (6초 → 8초로 증가)
+const BATCH_SIZE = 3; // 1배치당 3개 브라우저 (테스트 결과 CAPTCHA 미발생)
+const BATCH_COOLDOWN_MS = 15000; // 배치 간 대기 시간 (15초로 단축)
 const MAX_PAGES = 15; // 순위 체크 최대 페이지
 const STALE_TIMEOUT_MS = 10 * 60 * 1000; // 10분 (타임아웃)
 

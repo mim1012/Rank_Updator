@@ -13,7 +13,7 @@ export class ApiProductCollector implements IProductCollector {
 
   private apiTimeout: number;
 
-  constructor(apiTimeout = 45000) {
+  constructor(apiTimeout = 30000) {
     this.apiTimeout = apiTimeout;
   }
 
