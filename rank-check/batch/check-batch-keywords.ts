@@ -109,19 +109,29 @@ async function claimKeywords(claimLimit: number): Promise<any[]> {
   // Fallback: RPC 함수가 없으면 update + select 방식 사용
   console.log('⚠️ RPC 함수 없음, fallback 모드 사용');
 
-  // 먼저 pending 또는 NULL 상태인 것들의 ID를 조회
+  // 먼저 pending 상태인 것들의 ID를 조회
   const { data: pendingIds, error: selectError } = await supabase
     .from('keywords_navershopping')
-    .select('id')
-    .or('status.eq.pending,status.is.null') // pending 또는 NULL (기존 데이터 호환)
+    .select('id, status')
+    .eq('status', 'pending')
     .order('id', { ascending: true })
     .limit(claimLimit);
 
+  console.log('   📋 조회 결과:', pendingIds?.length || 0, '개, 에러:', selectError?.message || '없음');
+
   if (selectError || !pendingIds || pendingIds.length === 0) {
+    // NULL 상태도 체크
+    const { data: nullIds } = await supabase
+      .from('keywords_navershopping')
+      .select('id, status')
+      .is('status', null)
+      .limit(5);
+    console.log('   📋 NULL 상태:', nullIds?.length || 0, '개');
     return [];
   }
 
   const ids = pendingIds.map((r) => r.id);
+  console.log('   🔒 할당 시도:', ids.length, '개');
 
   // 해당 ID들을 processing으로 업데이트하면서 select
   const { data: claimed, error: updateError } = await supabase
@@ -132,7 +142,7 @@ async function claimKeywords(claimLimit: number): Promise<any[]> {
       started_at: new Date().toISOString(),
     })
     .in('id', ids)
-    .or('status.eq.pending,status.is.null') // 중복 방지 + 기존 데이터 호환
+    .eq('status', 'pending')
     .select();
 
   if (updateError) {
@@ -140,6 +150,7 @@ async function claimKeywords(claimLimit: number): Promise<any[]> {
     return [];
   }
 
+  console.log('   ✅ 할당 완료:', claimed?.length || 0, '개');
   return claimed || [];
 }
 
