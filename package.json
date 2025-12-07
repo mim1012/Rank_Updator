@@ -81,6 +81,7 @@
     "node-fetch": "^3.3.2",
     "postgres": "^3.4.7",
     "puppeteer": "^24.31.0",
+    "puppeteer-real-browser": "^1.4.4",
     "react": "^19.1.1",
     "react-day-picker": "^9.11.1",
     "react-dom": "^19.1.1",
