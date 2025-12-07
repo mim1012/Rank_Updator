@@ -54,16 +54,66 @@ export async function getCatalogMidFromUrl(
       }
     }
 
-    // 대체 방법 2: 페이지 소스에서 nvMid 검색
+    // 대체 방법 2: 페이지 소스에서 nvMid 검색 (여러 패턴 시도)
     const sourceMid = await page.evaluate(() => {
       const html = document.documentElement.outerHTML;
-      const match = html.match(/nvMid["\s:=]+(\d{10,})/);
-      return match ? match[1] : null;
+
+      // 패턴 1: nvMid 파라미터
+      let match = html.match(/nvMid["\s:=]+(\d{10,})/);
+      if (match) return match[1];
+
+      // 패턴 2: catalogId
+      match = html.match(/catalogId["\s:=]+(\d{10,})/);
+      if (match) return match[1];
+
+      // 패턴 3: productId (네이버 쇼핑용)
+      match = html.match(/"productId"\s*:\s*"?(\d{10,})"?/);
+      if (match) return match[1];
+
+      // 패턴 4: channelProductNo와 연관된 nvMid
+      match = html.match(/nvMid[=:](\d{10,})/);
+      if (match) return match[1];
+
+      return null;
     });
 
     if (sourceMid) {
       console.log(`✅ 페이지 소스에서 MID 추출: ${sourceMid}`);
       return sourceMid;
+    }
+
+    // 대체 방법 3: 네이버 쇼핑 연동 API에서 추출 (스크립트 태그)
+    const scriptMid = await page.evaluate(() => {
+      const scripts = Array.from(document.querySelectorAll('script'));
+      for (const script of scripts) {
+        const content = script.textContent || '';
+        // __PRELOADED_STATE__ 또는 window.__INITIAL_STATE__ 에서 찾기
+        const match = content.match(/(?:nvMid|catalogNo|productId)["\s:=]+["']?(\d{10,})["']?/);
+        if (match) return match[1];
+      }
+      return null;
+    });
+
+    if (scriptMid) {
+      console.log(`✅ 스크립트에서 MID 추출: ${scriptMid}`);
+      return scriptMid;
+    }
+
+    // 대체 방법 4: meta 태그에서 추출
+    const metaMid = await page.evaluate(() => {
+      // og:url에서 catalog ID 추출
+      const ogUrl = document.querySelector('meta[property="og:url"]');
+      if (ogUrl) {
+        const content = ogUrl.getAttribute('content') || '';
+        const match = content.match(/catalog\/(\d+)/);
+        if (match) return match[1];
+      }
+      return null;
+    });
+
+    if (metaMid) {
+      console.log(`✅ 메타 태그에서 MID 추출: ${metaMid}`);
+      return metaMid;
     }
 
     // 디버깅: 실제 로드된 페이지 정보 출력
