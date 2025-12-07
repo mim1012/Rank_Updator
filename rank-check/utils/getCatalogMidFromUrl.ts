@@ -15,29 +15,59 @@ export async function getCatalogMidFromUrl(
   try {
     console.log(`📦 상품 페이지 방문: ${productUrl.substring(0, 80)}...`);
 
-    // API 요청 인터셉트 설정
+    // API 요청/응답 인터셉트 설정
     let catalogMid: string | null = null;
 
+    // request에서 nvMid 찾기
     const requestHandler = (request: any) => {
       const url = request.url();
-      const nvMidMatch = url.match(/[?&]nvMid=(\d{10,})/);
-      if (nvMidMatch && !catalogMid) {
-        catalogMid = nvMidMatch[1];
+      // nvMid 파라미터 (10자리 이상)
+      let match = url.match(/[?&]nvMid=(\d{10,})/);
+      if (match && !catalogMid) {
+        catalogMid = match[1];
+        return;
+      }
+      // productId 파라미터
+      match = url.match(/[?&]productId=(\d{10,})/);
+      if (match && !catalogMid) {
+        catalogMid = match[1];
+        return;
+      }
+      // catalog URL 패턴
+      match = url.match(/\/catalog\/(\d{10,})/);
+      if (match && !catalogMid) {
+        catalogMid = match[1];
+      }
+    };
+
+    // response에서도 nvMid 찾기
+    const responseHandler = (response: any) => {
+      const url = response.url();
+      const match = url.match(/[?&]nvMid=(\d{10,})/);
+      if (match && !catalogMid) {
+        catalogMid = match[1];
       }
     };
 
     page.on('request', requestHandler);
+    page.on('response', responseHandler);
 
-    // 상품 페이지로 이동
+    // 상품 페이지로 이동 (networkidle2로 API 완료 대기)
     await page.goto(productUrl, {
-      waitUntil: "domcontentloaded",
-      timeout: 15000,
+      waitUntil: "networkidle2",
+      timeout: 20000,
     });
 
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // 추가 대기 (느린 네트워크 대응)
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // 스크롤하여 추가 API 트리거
+    await page.evaluate(() => window.scrollBy(0, 500));
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     // 리스너 제거
     page.off('request', requestHandler);
+    page.off('response', responseHandler);
 
     if (catalogMid) {
       console.log(`✅ API 요청에서 Catalog MID 추출: ${catalogMid}`);
