@@ -273,6 +273,28 @@ async function main() {
 
         console.log(`[${j + 1}/${batch.length}] ${keywordRecord.keyword}`);
 
+        // ★ MID 추출 실패 시 먼저 처리 (pending으로 복귀)
+        if (result.midSource === 'failed' || result.error === 'MID 추출 실패') {
+          console.log(`   ❌ MID 추출 실패 → pending으로 복귀`);
+          failedCount++;
+
+          const currentRetryCount = keywordRecord.retry_count || 0;
+          if (currentRetryCount >= 2) {
+            // 2회 재시도 완료 → 삭제
+            await supabase.from('keywords_navershopping').delete().eq('id', keywordRecord.id);
+            console.log(`   ⛔ MID 추출 3회 실패 - 대기열에서 삭제됨`);
+          } else {
+            await supabase.from('keywords_navershopping').update({
+              retry_count: currentRetryCount + 1,
+              status: 'pending',
+              worker_id: null,
+              started_at: null,
+            }).eq('id', keywordRecord.id);
+            console.log(`   🔄 재시도 예정 (${currentRetryCount + 1}/2) - 대기열로 복귀`);
+          }
+          continue;  // 다음 키워드로
+        }
+
         if (result.rank) {
           console.log(`   순위: ${result.rank.totalRank}위 (${result.rank.isAd ? '광고' : '오가닉'})`);
           successCount++;
