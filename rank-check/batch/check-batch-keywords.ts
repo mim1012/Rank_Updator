@@ -37,7 +37,7 @@ const TOTAL_RAM_GB = Math.round(os.totalmem() / (1024 ** 3));
 
 // 배치 크기: 2개 고정 (브라우저 2개 병렬)
 const BATCH_SIZE = parseInt(process.env.BATCH_SIZE || '2', 10);
-const BATCH_COOLDOWN_MS = parseInt(process.env.BATCH_COOLDOWN_MS || '60000', 10); // 1분
+const BATCH_COOLDOWN_MS = parseInt(process.env.BATCH_COOLDOWN_MS || '15000', 10); // 15초
 const MAX_PAGES = parseInt(process.env.MAX_PAGES || '15', 10);
 const STALE_TIMEOUT_MS = 10 * 60 * 1000; // 10분 (타임아웃)
 
