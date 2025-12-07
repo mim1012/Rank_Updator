@@ -49,10 +49,10 @@ export async function urlToMid(
         originalUrl: url,
       };
     }
-    // 변환 실패 시 direct extraction 시도
+    // 카탈로그 MID 없음 → 스마트스토어 상품 ID로 직접 검색
     const directMid = extractMidFromUrl(url);
     if (directMid) {
-      console.log(`   ⚠️  카탈로그 변환 실패, 스마트스토어 MID 사용: ${directMid}`);
+      console.log(`   ℹ️  카탈로그 미등록 상품 → 상품 ID로 검색: ${directMid}`);
       return {
         mid: directMid,
         source: 'direct',
