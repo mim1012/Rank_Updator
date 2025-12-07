@@ -141,7 +141,7 @@ async function main(): Promise<void> {
   }
 
   log('npm install... (시간이 걸릴 수 있습니다)');
-  if (runCommand('npm install', { cwd: INSTALL_DIR })) {
+  if (runCommand('npm install --legacy-peer-deps', { cwd: INSTALL_DIR })) {
     log('의존성 설치 완료');
   } else {
     console.log('[경고] npm install 실패');
