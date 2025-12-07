@@ -1,61 +1,122 @@
 {
-  "timestamp": "2025-12-06T16:18:42.289Z",
+  "timestamp": "2025-12-06T23:11:58.878Z",
   "config": {
-    "batchSize": 3,
+    "batchSize": 2,
     "maxPages": 15,
-    "cooldown": 15000
+    "cooldown": 10000
   },
   "summary": {
-    "total": 9,
-    "success": 8,
-    "notFound": 1,
-    "failed": 1,
-    "duration": 262
+    "total": 64,
+    "success": 64,
+    "notFound": 0,
+    "blocked": 54,
+    "failed": 0,
+    "duration": 1338
   },
   "results": [
     {
       "batchNumber": 1,
-      "keywordId": 2092,
-      "keyword": "남자양말",
-      "url": "https://smartstore.naver.com/archerskorea/products/8217911437",
-      "mid": "85762411760",
+      "keywordId": 2475,
+      "keyword": "21V 전동드릴",
+      "url": "https://smartstore.naver.com/kellsen/products/10422267700",
+      "mid": "87966772686",
       "rank": {
-        "totalRank": 79,
-        "organicRank": 79,
+        "totalRank": 49,
+        "organicRank": 49,
         "isAd": false,
         "page": 2,
-        "pagePosition": 39
+        "pagePosition": 9
       },
-      "duration": 27151,
+      "duration": 32895,
       "saveResult": {
         "success": true,
-        "slotNaverId": 197,
+        "slotNaverId": 149,
         "action": "updated"
       }
     },
     {
       "batchNumber": 1,
-      "keywordId": 2095,
-      "keyword": "4.0배터리",
-      "url": "https://smartstore.naver.com/kellsen/products/11759447214",
-      "mid": "89303957801",
+      "keywordId": 2491,
+      "keyword": "S24울트라 지갑케이스 실버",
+      "url": "https://smartstore.naver.com/darammall/products/6416787176?NaPm=ct%3Dmisk0qow%7Cci%3De6b7c111e23ba4ce14b12122457a31956f991c75%7Ctr%3Dslsl%7Csn%3D819441%7Chk%3D26b69eb49df72f08f6bfd24bbd39d2fb4b28276b&nl-au=bc197dabc2b9410ab3b198908daab4d1&nl-query=S24%EC%9A%B8%ED%8A%B8%EB%9D%BC+%EC%A7%80%EA%B0%91%EC%BC%80%EC%9D%B4%EC%8A%A4+%EC%8B%A4%EB%B2%84",
+      "mid": "83961287509",
       "rank": {
-        "totalRank": 9,
-        "organicRank": 6,
+        "totalRank": 18,
+        "organicRank": 15,
         "isAd": false,
         "page": 1,
-        "pagePosition": 36
+        "pagePosition": 154
       },
-      "duration": 26409,
+      "duration": 31028,
       "saveResult": {
         "success": true,
-        "slotNaverId": 158,
+        "slotNaverId": 227,
         "action": "updated"
       }
     },
     {
-      "batchNumber": 1,
-      "keywordId": 2090,
+      "batchNumber": 2,
+      "keywordId": 2492,
+      "keyword": "S24울트라 지갑케이스 실버",
+      "url": "https://smartstore.naver.com/darammall/products/6416787176?NaPm=ct%3Dmisk0qow%7Cci%3De6b7c111e23ba4ce14b12122457a31956f991c75%7Ctr%3Dslsl%7Csn%3D819441%7Chk%3D26b69eb49df72f08f6bfd24bbd39d2fb4b28276b&nl-au=bc197dabc2b9410ab3b198908daab4d1&nl-query=S24%EC%9A%B8%ED%8A%B8%EB%9D%BC+%EC%A7%80%EA%B0%91%EC%BC%80%EC%9D%B4%EC%8A%A4+%EC%8B%A4%EB%B2%84",
+      "mid": "83961287509",
+      "rank": {
+        "totalRank": 18,
+        "organicRank": 15,
+        "isAd": false,
+        "page": 1,
+        "pagePosition": 154
+      },
+      "duration": 28670,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 226,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 2,
+      "keywordId": 2493,
+      "keyword": "대형파라솔",
+      "url": "https://smartstore.naver.com/fullystation/products/6520503469",
+      "mid": "84065003802",
+      "rank": {
+        "totalRank": 28,
+        "organicRank": 24,
+        "isAd": false,
+        "page": 1,
+        "pagePosition": 107
+      },
+      "duration": 29226,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 232,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 3,
+      "keywordId": 2494,
+      "keyword": "대형파라솔",
+      "url": "https://smartstore.naver.com/fullystation/products/6520503469",
+      "mid": "84065003802",
+      "rank": {
+        "totalRank": 28,
+        "organicRank": 24,
+        "isAd": false,
+        "page": 1,
+        "pagePosition": 107
+      },
+      "duration": 32697,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 228,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 3,
+      "keywordId": 2495,
       "keyword": "라봉홈 실내화",
       "url": "https://smartstore.naver.com/labong_home/products/10802912771",
       "mid": "88347418762",
@@ -66,60 +127,467 @@
         "page": 1,
         "pagePosition": 21
       },
-      "duration": 26873,
+      "duration": 28219,
       "saveResult": {
         "success": true,
-        "slotNaverId": 198,
+        "slotNaverId": 200,
         "action": "updated"
       }
     },
     {
-      "batchNumber": 2,
-      "keywordId": 2091,
-      "keyword": "송풍기",
-      "url": "https://m.smartstore.naver.com/ballefid/products/11430881616?NaPm=ct%3Dmig90oag%7Cci%3D746fc768aa03cc566c84b5a8829b04496b8d72ca%7Ctr%3Dslsl%7Csn%3D8137997%7Chk%3Ddc6f603ae566f7cd9c6be1cd38c0b6ef630612f1&nl-au=05aca39fa0674218a8f309d4e7622093&nl-query=%EC%86%A1%ED%92%8D%EA%B8%B0",
-      "mid": "88975391981",
-      "rank": {
-        "totalRank": 148,
-        "organicRank": 148,
-        "isAd": false,
-        "page": 4,
-        "pagePosition": 28
-      },
-      "duration": 39220,
-      "saveResult": {
-        "success": true,
-        "slotNaverId": 39,
-        "action": "updated"
-      }
-    },
-    {
-      "batchNumber": 2,
-      "keywordId": 2093,
-      "keyword": "8인치 베어툴",
-      "url": "https://smartstore.naver.com/kellsen/products/11989282346",
-      "mid": "89533793034",
-      "rank": null,
-      "duration": 106431,
-      "saveResult": {
-        "success": true,
-        "action": "updated"
-      }
-    },
-    {
-      "batchNumber": 2,
-      "keywordId": 2088,
+      "batchNumber": 4,
+      "keywordId": 2496,
       "keyword": "양면 방수앞치마",
       "url": "https://smartstore.naver.com/zininara/products/4405153307",
       "mid": "81949675757",
       "rank": {
-        "totalRank": 16,
-        "organicRank": 13,
+        "totalRank": 17,
+        "organicRank": 14,
         "isAd": false,
         "page": 1,
-        "pagePosition": 56
+        "pagePosition": 58
       },
-      "duration": 26879,
+      "duration": 28721,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 205,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 4,
+      "keywordId": 2497,
+      "keyword": "파이넬캠핑랜턴",
+      "url": "https://smartstore.naver.com/campingtalk/products/12402395557",
+      "mid": "89946906282",
+      "rank": {
+        "totalRank": 11,
+        "organicRank": 8,
+        "isAd": false,
+        "page": 1,
+        "pagePosition": 58
+      },
+      "duration": 27326,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 210,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 5,
+      "keywordId": 2498,
+      "keyword": "퀀텀5 지갑케이스",
+      "url": "https://smartstore.naver.com/darammall/products/10358135272?NaPm=ct%3Dmisjj57c%7Cci%3D17982347079d260ecb5d8b24bff95d47add08475%7Ctr%3Dslsl%7Csn%3D819441%7Chk%3D63feb8ece6a09d71d9d060b5571ec0014adef507&nl-au=5b3ccdcb16a54b01b1c0c194c62e5b64&nl-query=%ED%80%80%ED%85%805+%EC%A7%80%EA%B0%91%EC%BC%80%EC%9D%B4%EC%8A%A4",
+      "mid": "87902639905",
+      "rank": {
+        "totalRank": 359,
+        "organicRank": 359,
+        "isAd": false,
+        "page": 9,
+        "pagePosition": 39
+      },
+      "duration": 126696,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 219,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 5,
+      "keywordId": 2499,
+      "keyword": "라봉홈 실내화",
+      "url": "https://smartstore.naver.com/labong_home/products/10802912771",
+      "mid": "88347418762",
+      "rank": {
+        "totalRank": 4,
+        "organicRank": 4,
+        "isAd": false,
+        "page": 1,
+        "pagePosition": 21
+      },
+      "duration": 28952,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 201,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 6,
+      "keywordId": 2502,
+      "keyword": "남자양말",
+      "url": "https://smartstore.naver.com/archerskorea/products/8217911437",
+      "mid": "85762411760",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 19936,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 197,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 6,
+      "keywordId": 2394,
+      "keyword": "송풍기",
+      "url": "https://m.smartstore.naver.com/ballefid/products/11430881616?NaPm=ct%3Dmig90oag%7Cci%3D746fc768aa03cc566c84b5a8829b04496b8d72ca%7Ctr%3Dslsl%7Csn%3D8137997%7Chk%3Ddc6f603ae566f7cd9c6be1cd38c0b6ef630612f1&nl-au=05aca39fa0674218a8f309d4e7622093&nl-query=%EC%86%A1%ED%92%8D%EA%B8%B0",
+      "mid": "88975391981",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 19738,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 21,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 7,
+      "keywordId": 2396,
+      "keyword": "NF맥세이프 거치대 최저가",
+      "url": "https://smartstore.naver.com/darammall/products/12035898790?NaPm=ct%3Dmisjqyu8%7Cci%3D298be27f2fa92100e011f3c5172a5530532db7c5%7Ctr%3Dslsl%7Csn%3D819441%7Chk%3Dc18635f849e7f92b0ae9c06c1956fe5ae45e2a16&nl-au=1b1ce2e539c948b99a2c8d5e8b4ff5f3&nl-query=%ED%9D%A1%EC%B0%A9%EC%8B%9D+%EB%A7%A5%EC%84%B8%EC%9D%B4%ED%94%84+%EC%B0%A8%EB%9F%89%EC%9A%A9+%EA%B1%B0%EC%B9%98%EB%8C%80",
+      "mid": "89580409487",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 22035,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 222,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 7,
+      "keywordId": 2406,
+      "keyword": "양치컵",
+      "url": "https://smartstore.naver.com/bucks2022/products/9946556112",
+      "mid": "87491058385",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 19623,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 143,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 8,
+      "keywordId": 2408,
+      "keyword": "전동드릴",
+      "url": "https://m.smartstore.naver.com/goldtraderscor/products/8058076323?NaPm=ct%3Dmig8xfs0%7Cci%3Dc319ede135f9743ee3ba240dde0802fef1449391%7Ctr%3Dslsl%7Csn%3D1353925%7Chk%3D72c6c21fa36ca4d97ea43b56e9da1a4215482e69&nl-au=2639bf3ae5124dfcb54a5aeaf8384516&nl-query=%EC%A0%84%EB%8F%99%EB%93%9C%EB%A6%B4",
+      "mid": "85602576646",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 19915,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 66,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 8,
+      "keywordId": 2409,
+      "keyword": "살림생각 거꾸로 투명 물빠짐 칫솔 치약 꽂이 양치컵 스탠드 거치대",
+      "url": "https://smartstore.naver.com/bucks2022/products/9946556112",
+      "mid": "87491058385",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 23449,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 137,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 9,
+      "keywordId": 2418,
+      "keyword": "6인치 전기톱",
+      "url": "https://smartstore.naver.com/kellsen/products/8164781277",
+      "mid": "85709281600",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20276,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 152,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 9,
+      "keywordId": 2420,
+      "keyword": "켈슨 충전 전동 전지가위 30mm 무선 전정 나무 가지치기 베어툴 배터리 x",
+      "url": "https://smartstore.naver.com/kellsen/products/9783301466",
+      "mid": "87327803739",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 24687,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 138,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 10,
+      "keywordId": 2429,
+      "keyword": "요거트스타터",
+      "url": "https://brand.naver.com/eatnayo/products/12116437724?nl-query=%EC%9A%94%EA%B1%B0%ED%8A%B8%EC%8A%A4%ED%83%80%ED%84%B0&nl-ts-pid=jg51vlqostGssOXTszl-506036&NaPm=ct%3Dmisghsh4%7Cci%3Dbc52acc1771d78b517b46cba4fce8ed7445250ff%7Ctr%3Dsls%7Csn%3D1922509%7Chk%3Dc853c3f716594556247e822967f220922c1d2cb6",
+      "mid": "12116437724",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 16585,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 177,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 10,
+      "keywordId": 2438,
+      "keyword": "8인치 전기톱",
+      "url": "https://smartstore.naver.com/kellsen/products/11146105902",
+      "mid": "88690616224",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 19937,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 153,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 11,
+      "keywordId": 2441,
+      "keyword": "요거트스타터",
+      "url": "https://brand.naver.com/eatnayo/products/12116437724?nl-query=%EC%9A%94%EA%B1%B0%ED%8A%B8%EC%8A%A4%ED%83%80%ED%84%B0&nl-ts-pid=jg51vlqostGssOXTszl-506036&NaPm=ct%3Dmisghsh4%7Cci%3Dbc52acc1771d78b517b46cba4fce8ed7445250ff%7Ctr%3Dsls%7Csn%3D1922509%7Chk%3Dc853c3f716594556247e822967f220922c1d2cb6",
+      "mid": "12116437724",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 16571,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 176,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 11,
+      "keywordId": 2446,
+      "keyword": "손목보호대 터널증후군",
+      "url": "https://smartstore.naver.com/haveguard/products/12232515345?NaPm=ct%3Dmisgvjug%7Cci%3Dc02d106b6a0a11bf1d32ee511fef1ed4ebcadbd2%7Ctr%3Dslsl%7Csn%3D12307501%7Chk%3D6ab1b43ada0e128688fb22e507df0cdad5d542ad&nl-au=747b14e805d043ed849a4ec2a74c9dd9&nl-query=%EC%86%90%EB%AA%A9%EB%B3%B4%ED%98%B8%EB%8C%80+%ED%84%B0%EB%84%90%EC%A6%9D%ED%9B%84%EA%B5%B0",
+      "mid": "89777026061",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20472,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 190,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 12,
+      "keywordId": 2447,
+      "keyword": "양념통 선반",
+      "url": "https://smartstore.naver.com/bucks2022/products/9650826438",
+      "mid": "87195328708",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20008,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 141,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 12,
+      "keywordId": 2448,
+      "keyword": "8인치 베어툴",
+      "url": "https://smartstore.naver.com/kellsen/products/11989282346",
+      "mid": "89533793034",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20238,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 161,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 13,
+      "keywordId": 2449,
+      "keyword": "자석선반",
+      "url": "https://smartstore.naver.com/bucks2022/products/10209300326",
+      "mid": "87753803839",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 19535,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 148,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 13,
+      "keywordId": 2458,
+      "keyword": "임팩드릴 베어툴",
+      "url": "https://smartstore.naver.com/kellsen/products/11206161677",
+      "mid": "88750672008",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20050,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 159,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 14,
+      "keywordId": 2466,
+      "keyword": "전기톱",
+      "url": "https://smartstore.naver.com/daehann09/products/9139106280?NaPm=ct%3Dmig6wv4g%7Cci%3D5d64b315ceff479101f2cb6effb0812e23960541%7Ctr%3Dslsl%7Csn%3D5685764%7Chk%3D8bafc95a1de8f09e0d1b188343866e263b0c6131&nl-au=41b5fff2733242f6afda0b03098d7aca&nl-query=%EC%A0%84%EA%B8%B0%ED%86%B1",
+      "mid": "86683606603",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20035,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 63,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 14,
+      "keywordId": 2467,
+      "keyword": "6인치 베어툴",
+      "url": "https://smartstore.naver.com/kellsen/products/9783350399",
+      "mid": "87327852672",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 19770,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 162,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 15,
+      "keywordId": 2468,
+      "keyword": "양면 방수앞치마",
+      "url": "https://smartstore.naver.com/zininara/products/4405153307",
+      "mid": "81949675757",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20785,
       "saveResult": {
         "success": true,
         "slotNaverId": 207,
@@ -127,39 +595,379 @@
       }
     },
     {
-      "batchNumber": 3,
-      "keywordId": 2096,
-      "keyword": "파이넬캠핑랜턴",
-      "url": "https://smartstore.naver.com/campingtalk/products/12402395557",
-      "mid": "89946906282",
+      "batchNumber": 15,
+      "keywordId": 2469,
+      "keyword": "양면 방수앞치마",
+      "url": "https://smartstore.naver.com/zininara/products/4405153307",
+      "mid": "81949675757",
       "rank": {
-        "totalRank": 10,
-        "organicRank": 7,
+        "totalRank": -1,
+        "organicRank": -1,
         "isAd": false,
-        "page": 1,
-        "pagePosition": 54
+        "page": 0,
+        "pagePosition": 0
       },
-      "duration": 26123,
+      "duration": 20136,
       "saveResult": {
         "success": true,
-        "slotNaverId": 211,
+        "slotNaverId": 206,
         "action": "updated"
       }
     },
     {
-      "batchNumber": 3,
-      "keywordId": 2094,
+      "batchNumber": 16,
+      "keywordId": 2470,
+      "keyword": "대포 베어툴",
+      "url": "https://smartstore.naver.com/kellsen/products/10153356798",
+      "mid": "87697860052",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20428,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 150,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 16,
+      "keywordId": 2471,
+      "keyword": "송풍기",
+      "url": "https://m.smartstore.naver.com/ballefid/products/11430881616?NaPm=ct%3Dmig90oag%7Cci%3D746fc768aa03cc566c84b5a8829b04496b8d72ca%7Ctr%3Dslsl%7Csn%3D8137997%7Chk%3Ddc6f603ae566f7cd9c6be1cd38c0b6ef630612f1&nl-au=05aca39fa0674218a8f309d4e7622093&nl-query=%EC%86%A1%ED%92%8D%EA%B8%B0",
+      "mid": "88975391981",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20129,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 22,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 17,
+      "keywordId": 2472,
+      "keyword": "강아지 발매트",
+      "url": "https://m.smartstore.naver.com/bbgsshop/products/6103200734?nl-query=%EB%B2%A0%EB%B9%84%EC%83%B5+%EA%B0%95%EC%95%84%EC%A7%80%EB%B0%9C%EB%A7%A4%ED%8A%B8&nl-ts-pid=jgZVxsqpsiZssg3EH0s-311774&NaPm=ct%3Dmir2h3mo%7Cci%3D19730b46cf67771d3d474ed65ae669b6811360c6%7Ctr%3Dsls%7Csn%3D5115496%7Chk%3D042fa097c747597a5d17db095af103395323b45b",
+      "mid": "83647700222",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20225,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 34,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 17,
+      "keywordId": 2473,
+      "keyword": "방진복",
+      "url": "https://smartstore.naver.com/zininara/products/5118953226",
+      "mid": "82663473550",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20089,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 204,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 18,
+      "keywordId": 2474,
+      "keyword": "파이넬캠핑랜턴",
+      "url": "https://smartstore.naver.com/campingtalk/products/12402395557",
+      "mid": "89946906282",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20373,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 208,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 18,
+      "keywordId": 2459,
+      "keyword": "라봉홈 실내화",
+      "url": "https://smartstore.naver.com/labong_home/products/10802912771",
+      "mid": "88347418762",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 19889,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 199,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 19,
+      "keywordId": 2460,
+      "keyword": "건초염 손목보호대",
+      "url": "https://smartstore.naver.com/haveguard/products/12232515345?NaPm=ct%3Dmisgrqi0%7Cci%3D79102920d2f664b83b87744c01d5ef78a72037b6%7Ctr%3Dslsl%7Csn%3D12307501%7Chk%3D9fe6229f76c8550e9428fa4f5a791b46fd3784e5&nl-au=0fba45d5f3db4a2cb29deab704b2c1fa&nl-query=%EA%B1%B4%EC%B4%88%EC%97%BC+%EC%86%90%EB%AA%A9%EB%B3%B4%ED%98%B8%EB%8C%80",
+      "mid": "89777026061",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 21209,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 192,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 19,
+      "keywordId": 2461,
+      "keyword": "라봉홈 실내화",
+      "url": "https://smartstore.naver.com/labong_home/products/10802912771",
+      "mid": "88347418762",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 19780,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 198,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 20,
+      "keywordId": 2462,
+      "keyword": "라봉홈 실내화",
+      "url": "https://smartstore.naver.com/labong_home/products/10802912771",
+      "mid": "88347418762",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20155,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 202,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 20,
+      "keywordId": 2463,
+      "keyword": "남자양말",
+      "url": "https://smartstore.naver.com/archerskorea/products/8217911437",
+      "mid": "85762411760",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 19811,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 196,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 21,
+      "keywordId": 2464,
+      "keyword": "남자양말",
+      "url": "https://smartstore.naver.com/archerskorea/products/8217911437",
+      "mid": "85762411760",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 19655,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 195,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 21,
+      "keywordId": 2465,
+      "keyword": "켈슨 무선 전동드릴 드라이버 공구세트 충전 임팩 21v 배터리 포함 가정용",
+      "url": "https://smartstore.naver.com/kellsen/products/10422267700",
+      "mid": "87966772686",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 24242,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 132,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 22,
+      "keywordId": 2476,
+      "keyword": "방진복",
+      "url": "https://smartstore.naver.com/zininara/products/5118953226",
+      "mid": "82663473550",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 19553,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 203,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 22,
+      "keywordId": 2477,
+      "keyword": "파이넬캠핑랜턴",
+      "url": "https://smartstore.naver.com/campingtalk/products/12402395557",
+      "mid": "89946906282",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20435,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 212,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 23,
+      "keywordId": 2478,
+      "keyword": "파이넬캠핑랜턴",
+      "url": "https://smartstore.naver.com/campingtalk/products/12402395557",
+      "mid": "89946906282",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 19958,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 209,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 23,
+      "keywordId": 2479,
+      "keyword": "갤럭시워치7 필름",
+      "url": "https://smartstore.naver.com/darammall/products/8452726280?NaPm=ct%3Dmisjgrk0%7Cci%3D41b76c9016041ba0ed87d932e6551496c33f0b9a%7Ctr%3Dslsl%7Csn%3D819441%7Chk%3D0135d41b728154f0f6735b8127350e75d49259da&nl-au=b4008533e76648da8bdb7a4948023f63&nl-query=%EA%B0%A4%EB%9F%AD%EC%8B%9C%EC%9B%8C%EC%B9%987+%ED%95%84%EB%A6%84",
+      "mid": "85997226603",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20472,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 218,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 24,
+      "keywordId": 2480,
       "keyword": "남자골덴바지",
       "url": "https://smartstore.naver.com/hashnormal/products/12628652671",
       "mid": "90173163527",
       "rank": {
-        "totalRank": 178,
-        "organicRank": 178,
+        "totalRank": -1,
+        "organicRank": -1,
         "isAd": false,
-        "page": 5,
-        "pagePosition": 18
+        "page": 0,
+        "pagePosition": 0
       },
-      "duration": 46605,
+      "duration": 20313,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 216,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 24,
+      "keywordId": 2481,
+      "keyword": "남자골덴바지",
+      "url": "https://smartstore.naver.com/hashnormal/products/12628652671",
+      "mid": "90173163527",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20805,
       "saveResult": {
         "success": true,
         "slotNaverId": 214,
@@ -167,22 +975,322 @@
       }
     },
     {
-      "batchNumber": 3,
-      "keywordId": 2081,
-      "keyword": "전동드릴",
-      "url": "https://m.smartstore.naver.com/goldtraderscor/products/8058076323?NaPm=ct%3Dmig8xfs0%7Cci%3Dc319ede135f9743ee3ba240dde0802fef1449391%7Ctr%3Dslsl%7Csn%3D1353925%7Chk%3D72c6c21fa36ca4d97ea43b56e9da1a4215482e69&nl-au=2639bf3ae5124dfcb54a5aeaf8384516&nl-query=%EC%A0%84%EB%8F%99%EB%93%9C%EB%A6%B4",
-      "mid": "85602576646",
+      "batchNumber": 25,
+      "keywordId": 2482,
+      "keyword": "파이넬캠핑랜턴",
+      "url": "https://smartstore.naver.com/campingtalk/products/12402395557",
+      "mid": "89946906282",
       "rank": {
-        "totalRank": 207,
-        "organicRank": 207,
+        "totalRank": -1,
+        "organicRank": -1,
         "isAd": false,
-        "page": 6,
-        "pagePosition": 7
+        "page": 0,
+        "pagePosition": 0
       },
-      "duration": 89844,
+      "duration": 20486,
       "saveResult": {
         "success": true,
-        "slotNaverId": 31,
+        "slotNaverId": 211,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 25,
+      "keywordId": 2483,
+      "keyword": "z플립6 필름",
+      "url": "https://smartstore.naver.com/darammall/products/7896613989?NaPm=ct%3Dmisjkr2o%7Cci%3Df253e93440110d07aedbb1375ad0459e65c12745%7Ctr%3Dslsl%7Csn%3D819441%7Chk%3D0fb7301853e6c0cd87aaef6bbc6e9d35e5a1c784&nl-au=79186c23b19049de8a893f85e12b3f3d&nl-query=Z%ED%94%8C%EB%A6%BD6+%ED%94%84%EB%A6%AC%EB%AF%B8%EC%97%84%ED%95%84%EB%A6%84",
+      "mid": "85441114312",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20758,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 220,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 26,
+      "keywordId": 2484,
+      "keyword": "대형파라솔",
+      "url": "https://smartstore.naver.com/fullystation/products/6520503469",
+      "mid": "84065003802",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20008,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 230,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 26,
+      "keywordId": 2485,
+      "keyword": "z플립7 액정필름 단품으로 사는곳",
+      "url": "https://smartstore.naver.com/darammall/products/12605751792?NaPm=ct%3Dmisjtyv4%7Cci%3D8c4029958de16067a3489581f24ebdf872e8c3b1%7Ctr%3Dslsl%7Csn%3D819441%7Chk%3Da6189e793489e3ea0e494ec949b3c11faed37ad8&nl-au=732c45bcc6354fa3959adb0f5c767e0a&nl-query=Z%ED%94%8C%EB%A6%BD7+%ED%95%84%EB%A6%84",
+      "mid": "90150262649",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 21621,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 223,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 27,
+      "keywordId": 2486,
+      "keyword": "단품인기 플립7액정필름",
+      "url": "https://smartstore.naver.com/darammall/products/12605751792?NaPm=ct%3Dmisjtyv4%7Cci%3D8c4029958de16067a3489581f24ebdf872e8c3b1%7Ctr%3Dslsl%7Csn%3D819441%7Chk%3Da6189e793489e3ea0e494ec949b3c11faed37ad8&nl-au=732c45bcc6354fa3959adb0f5c767e0a&nl-query=Z%ED%94%8C%EB%A6%BD7+%ED%95%84%EB%A6%84",
+      "mid": "90150262649",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20992,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 225,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 27,
+      "keywordId": 2487,
+      "keyword": "송풍기",
+      "url": "https://m.smartstore.naver.com/ballefid/products/11430881616?NaPm=ct%3Dmig90oag%7Cci%3D746fc768aa03cc566c84b5a8829b04496b8d72ca%7Ctr%3Dslsl%7Csn%3D8137997%7Chk%3Ddc6f603ae566f7cd9c6be1cd38c0b6ef630612f1&nl-au=05aca39fa0674218a8f309d4e7622093&nl-query=%EC%86%A1%ED%92%8D%EA%B8%B0",
+      "mid": "88975391981",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 19642,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 28,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 28,
+      "keywordId": 2488,
+      "keyword": "대형파라솔",
+      "url": "https://smartstore.naver.com/fullystation/products/6520503469",
+      "mid": "84065003802",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 19713,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 231,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 28,
+      "keywordId": 2489,
+      "keyword": "대형파라솔",
+      "url": "https://smartstore.naver.com/fullystation/products/6520503469",
+      "mid": "84065003802",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20128,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 229,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 29,
+      "keywordId": 2490,
+      "keyword": "Z플립7 필름",
+      "url": "https://smartstore.naver.com/darammall/products/12605751792?NaPm=ct%3Dmisjtyv4%7Cci%3D8c4029958de16067a3489581f24ebdf872e8c3b1%7Ctr%3Dslsl%7Csn%3D819441%7Chk%3Da6189e793489e3ea0e494ec949b3c11faed37ad8&nl-au=732c45bcc6354fa3959adb0f5c767e0a&nl-query=Z%ED%94%8C%EB%A6%BD7+%ED%95%84%EB%A6%84",
+      "mid": "90150262649",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 21294,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 224,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 29,
+      "keywordId": 2500,
+      "keyword": "켈슨 무선 핸드 그라인더 베어툴 (배터리X)",
+      "url": "https://smartstore.naver.com/kellsen/products/11260534238",
+      "mid": "11260534238",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 22414,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 136,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 30,
+      "keywordId": 2501,
+      "keyword": "켈슨 충전식 20cm 무선 전동 전기톱 베어툴 (배터리X)",
+      "url": "https://smartstore.naver.com/kellsen/products/11989282346",
+      "mid": "89533793034",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 24922,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 133,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 30,
+      "keywordId": 2503,
+      "keyword": "전지가위",
+      "url": "https://smartstore.naver.com/kellsen/products/7982233216",
+      "mid": "7982233216",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20026,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 156,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 31,
+      "keywordId": 2504,
+      "keyword": "남자골덴바지",
+      "url": "https://smartstore.naver.com/hashnormal/products/12628652671",
+      "mid": "90173163527",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 19806,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 215,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 31,
+      "keywordId": 2505,
+      "keyword": "남자골덴바지",
+      "url": "https://smartstore.naver.com/hashnormal/products/12628652671",
+      "mid": "90173163527",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20047,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 217,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 32,
+      "keywordId": 2506,
+      "keyword": "멀티어댑터",
+      "url": "https://smartstore.naver.com/dongmin375/products/8528045093?NaPm=ct%3Dmisgh28o%7Cci%3D1110807ea00ac7fddcc90ed0946b46421ac9eaec%7Ctr%3Dslsl%7Csn%3D1469406%7Chk%3Da1f1d345ace0e02b32675c9c531a165dca55ab56&nl-au=90797cfad28742c8819136d1a181e590&nl-query=%EB%A9%80%ED%8B%B0%EC%96%B4%EB%8C%91%ED%84%B0",
+      "mid": "86072545416",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 20042,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 175,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 32,
+      "keywordId": 2507,
+      "keyword": "남자골덴바지",
+      "url": "https://smartstore.naver.com/hashnormal/products/12628652671",
+      "mid": "90173163527",
+      "rank": {
+        "totalRank": -1,
+        "organicRank": -1,
+        "isAd": false,
+        "page": 0,
+        "pagePosition": 0
+      },
+      "duration": 19766,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 213,
         "action": "updated"
       }
     }

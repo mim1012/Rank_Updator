@@ -66,7 +66,19 @@ export async function getCatalogMidFromUrl(
       return sourceMid;
     }
 
+    // 디버깅: 실제 로드된 페이지 정보 출력
+    const pageTitle = await page.title();
+    const finalUrl = page.url();
     console.log(`⚠️ Catalog MID를 찾을 수 없습니다`);
+    console.log(`   📍 최종 URL: ${finalUrl.substring(0, 100)}...`);
+    console.log(`   📄 페이지 제목: ${pageTitle}`);
+
+    // 차단 페이지 감지
+    if (pageTitle.includes('보안') || pageTitle.includes('확인') ||
+        finalUrl.includes('captcha') || finalUrl.includes('security')) {
+      console.log(`   🛑 차단/보안 페이지 감지됨!`);
+    }
+
     return null;
   } catch (error: any) {
     console.error(`❌ Catalog MID 추출 실패: ${error.message}`);

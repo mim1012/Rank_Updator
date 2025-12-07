@@ -1,0 +1,58 @@
+{
+  "timestamp": "2025-12-07T12:14:37.369Z",
+  "config": {
+    "batchSize": 2,
+    "maxPages": 15,
+    "cooldown": 60000
+  },
+  "summary": {
+    "total": 2,
+    "success": 2,
+    "notFound": 0,
+    "blocked": 0,
+    "failed": 0,
+    "duration": 34
+  },
+  "results": [
+    {
+      "batchNumber": 1,
+      "keywordId": 2755,
+      "keyword": "NF맥세이프 거치대 최저가",
+      "url": "https://smartstore.naver.com/darammall/products/12035898790?NaPm=ct%3Dmisjqyu8%7Cci%3D298be27f2fa92100e011f3c5172a5530532db7c5%7Ctr%3Dslsl%7Csn%3D819441%7Chk%3Dc18635f849e7f92b0ae9c06c1956fe5ae45e2a16&nl-au=1b1ce2e539c948b99a2c8d5e8b4ff5f3&nl-query=%ED%9D%A1%EC%B0%A9%EC%8B%9D+%EB%A7%A5%EC%84%B8%EC%9D%B4%ED%94%84+%EC%B0%A8%EB%9F%89%EC%9A%A9+%EA%B1%B0%EC%B9%98%EB%8C%80",
+      "mid": "89580409487",
+      "rank": {
+        "totalRank": 7,
+        "organicRank": 4,
+        "isAd": false,
+        "page": 1,
+        "pagePosition": 31
+      },
+      "duration": 32461,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 222,
+        "action": "updated"
+      }
+    },
+    {
+      "batchNumber": 1,
+      "keywordId": 2756,
+      "keyword": "우드슬랩",
+      "url": "https://smartstore.naver.com/43outlet/products/4178551925",
+      "mid": "81723073306",
+      "rank": {
+        "totalRank": 21,
+        "organicRank": 19,
+        "isAd": false,
+        "page": 1,
+        "pagePosition": 90
+      },
+      "duration": 31713,
+      "saveResult": {
+        "success": true,
+        "slotNaverId": 244,
+        "action": "updated"
+      }
+    }
+  ]
+}
