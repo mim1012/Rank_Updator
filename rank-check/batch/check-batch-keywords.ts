@@ -124,7 +124,7 @@ async function claimKeywords(claimLimit: number): Promise<any[]> {
     .from('keywords_navershopping')
     .select('id, status')
     .eq('status', 'pending')
-    .order('id', { ascending: true })
+    .order('id', { ascending: false })
     .limit(claimLimit);
 
   console.log('   📋 조회 결과:', pendingIds?.length || 0, '개, 에러:', selectError?.message || '없음');
