@@ -108,7 +108,7 @@ async function runRankCheck(): Promise<void> {
   return new Promise((resolve, reject) => {
     log('🔍 순위 체크 시작...');
 
-    const scriptPath = path.join(PROJECT_ROOT, 'rank-check', 'batch', 'check-batch-keywords.ts');
+    const scriptPath = path.join(PROJECT_ROOT, 'rank-check', 'batch', 'check-batch-worker-pool.ts');
 
     // tsx로 스크립트 실행
     childProcess = spawn('npx', ['tsx', scriptPath], {
