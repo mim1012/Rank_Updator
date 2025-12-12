@@ -134,6 +134,8 @@ export async function saveRankToSlotNaver(
             start_rank: slotRecord.start_rank ?? currentRank, // ✅ null이면 현재 순위로 설정
             keyword: keyword.keyword, // 키워드 업데이트
             link_url: keyword.link_url, // URL 업데이트
+            mid: mid, // ✅ MID 저장 (재사용 가능)
+            product_name: productName, // 상품명 저장
             updated_at: now,
           })
           .eq('id', slotRecord.id);
@@ -157,6 +159,8 @@ export async function saveRankToSlotNaver(
           customer_name: keyword.customer_name || '기본고객',
           current_rank: currentRank,
           start_rank: currentRank, // 최초 생성 시에만 기록 (불변)
+          mid: mid, // ✅ MID 저장 (재사용 가능)
+          product_name: productName, // 상품명 저장
           created_at: now,
           updated_at: now,
         })

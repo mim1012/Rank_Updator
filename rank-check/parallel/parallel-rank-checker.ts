@@ -1,22 +1,32 @@
 /**
- * 병렬 순위 체크 시스템 (patchright 버전)
+ * 병렬 순위 체크 시스템
  *
  * 여러 URL의 순위를 동시에 체크하여 전체 실행 시간을 단축합니다.
  * 각 URL마다 독립적인 브라우저 인스턴스를 사용하여 에러를 격리합니다.
- * patchright: Playwright 기반 봇 감지 우회 엔진
  */
 
-import { chromium, type BrowserContext, type Page } from 'patchright';
+import { connect } from 'puppeteer-real-browser';
 import { findAccurateRank, type RankResult } from '../accurate-rank-checker';
 import { urlToMid, type MidExtractionResult } from '../utils/url-to-mid-converter';
 import * as path from 'path';
 import * as os from 'os';
+import * as fs from 'fs';
+
+// 워커별 프로필 경로 (쿠키/세션 유지)
+function getWorkerProfilePath(workerId: number): string {
+  const profilePath = path.join(os.tmpdir(), `prb-rank-worker-${workerId}`);
+  if (!fs.existsSync(profilePath)) {
+    fs.mkdirSync(profilePath, { recursive: true });
+  }
+  return profilePath;
+}
 
 export interface ParallelRankRequest {
   url: string;
   keyword: string;
   productName?: string;
   maxPages?: number;
+  cachedMid?: string;  // ✅ 이미 저장된 MID (있으면 URL 방문 skip)
 }
 
 export interface ParallelRankResult {
@@ -24,22 +34,12 @@ export interface ParallelRankResult {
   keyword: string;
   productName?: string;
   mid: string | null;
-  midSource: 'direct' | 'catalog' | 'failed';
+  midSource: 'direct' | 'catalog' | 'cached' | 'failed';  // ✅ cached 추가
   rank: RankResult | null;
   duration: number;
   error?: string;
   blocked?: boolean;  // 차단 감지 여부
 }
-
-// 4분할 창 배치 설정
-const WINDOW_WIDTH = 480;
-const WINDOW_HEIGHT = 400;
-const WINDOW_POSITIONS = [
-  { x: 0, y: 0 },                      // 좌상단
-  { x: WINDOW_WIDTH, y: 0 },           // 우상단
-  { x: 0, y: WINDOW_HEIGHT },          // 좌하단
-  { x: WINDOW_WIDTH, y: WINDOW_HEIGHT }, // 우하단
-];
 
 export class ParallelRankChecker {
   /**
@@ -59,64 +59,66 @@ export class ParallelRankChecker {
       `[${index + 1}] 🌐 브라우저 시작: ${request.url.substring(0, 60)}...`
     );
 
-    let context: BrowserContext | null = null;
-    let page: Page | null = null;
-
-    // 창 위치 계산 (4개 순환)
-    const position = WINDOW_POSITIONS[index % 4];
-
-    // 워커별 프로필 디렉토리 (쿠키/세션 유지)
-    const userDataDir = path.join(os.tmpdir(), 'rank-checker-profiles', `worker-${index % 4}`);
+    let browser: any = null;
+    let page: any = null;
 
     try {
-      // persistentContext로 브라우저 시작 (쿠키/세션 유지, 봇 감지 우회)
-      context = await chromium.launchPersistentContext(userDataDir, {
+      // 독립적인 브라우저 인스턴스 생성 (persistentContext)
+      const userDataDir = getWorkerProfilePath(index);
+      const connection = await connect({
         headless: false,  // Visible 모드 (네이버 봇 탐지 회피)
-        channel: 'chrome',  // 시스템에 설치된 Chrome 사용
-        viewport: { width: WINDOW_WIDTH - 20, height: WINDOW_HEIGHT - 100 },
-        locale: 'ko-KR',
-        args: [
-          `--window-size=${WINDOW_WIDTH},${WINDOW_HEIGHT}`,
-          `--window-position=${position.x},${position.y}`,
-          '--disable-blink-features=AutomationControlled',
-        ],
+        turnstile: true,
+        fingerprint: true,
+        customConfig: {
+          userDataDir: userDataDir,
+        },
       });
 
-      // 기존 페이지 사용 또는 새 페이지 생성
-      page = context.pages()[0] || await context.newPage();
+      browser = connection.browser;
+      page = connection.page;
 
-      // URL → MID 변환
-      const midResult: MidExtractionResult = await urlToMid(request.url, page);
+      // ✅ cachedMid가 있으면 URL 방문 skip
+      let mid: string;
+      let midSource: 'direct' | 'catalog' | 'cached' | 'failed';
 
-      if (!midResult.mid) {
-        await context.close();
-        return {
-          url: request.url,
-          keyword: request.keyword,
-          productName: request.productName,
-          mid: null,
-          midSource: 'failed',
-          rank: null,
-          duration: Date.now() - startTime,
-          error: 'MID 추출 실패',
-        };
+      if (request.cachedMid) {
+        mid = request.cachedMid;
+        midSource = 'cached';
+        console.log(`[${index + 1}] ⚡ 캐시된 MID 사용: ${mid}`);
+      } else {
+        // URL → MID 변환 (스마트스토어 방문)
+        const midResult: MidExtractionResult = await urlToMid(request.url, page);
+
+        if (!midResult.mid) {
+          await browser.close();
+          return {
+            url: request.url,
+            keyword: request.keyword,
+            productName: request.productName,
+            mid: null,
+            midSource: 'failed',
+            rank: null,
+            duration: Date.now() - startTime,
+            error: 'MID 추출 실패',
+          };
+        }
+
+        mid = midResult.mid;
+        midSource = midResult.source;
+        console.log(`[${index + 1}] ✅ MID 추출: ${mid} (${midSource})`);
       }
-
-      console.log(
-        `[${index + 1}] ✅ MID 추출: ${midResult.mid} (${midResult.source})`
-      );
 
       // 순위 체크 (검증된 함수 사용)
       const maxPages = request.maxPages ?? 15;
       const rankResult = await findAccurateRank(
         page,
         request.keyword,
-        midResult.mid,
+        mid,
         maxPages
       );
 
-      // 컨텍스트 종료
-      await context.close();
+      // 브라우저 종료
+      await browser.close();
 
       const duration = Date.now() - startTime;
 
@@ -132,8 +134,8 @@ export class ParallelRankChecker {
         url: request.url,
         keyword: request.keyword,
         productName: request.productName,
-        mid: midResult.mid,
-        midSource: midResult.source,
+        mid: mid,
+        midSource: midSource,
         rank: rankResult,
         duration,
         blocked: isBlocked,
@@ -141,9 +143,9 @@ export class ParallelRankChecker {
     } catch (error: any) {
       console.log(`[${index + 1}] ❌ 에러: ${error.message}`);
 
-      // 컨텍스트 강제 종료
-      if (context) {
-        await context.close().catch(() => {});
+      // 브라우저 강제 종료
+      if (browser) {
+        await browser.close().catch(() => {});
       }
 
       return {
@@ -160,10 +162,17 @@ export class ParallelRankChecker {
   }
 
   /**
-   * 여러 URL을 병렬로 순위 체크합니다 (기존 방식 - 배치 단위 대기)
+   * 여러 URL을 병렬로 순위 체크합니다
    *
    * @param requests - 순위 체크 요청 배열
    * @returns 순위 체크 결과 배열
+   *
+   * @example
+   * const checker = new ParallelRankChecker();
+   * const results = await checker.checkUrls([
+   *   { url: 'https://...', keyword: '장난감' },
+   *   { url: 'https://...', keyword: '장난감' },
+   * ]);
    */
   async checkUrls(
     requests: ParallelRankRequest[]
@@ -204,13 +213,6 @@ export class ParallelRankChecker {
    * @param numWorkers - 동시 실행 워커 수 (기본 4)
    * @param onResult - 각 결과 완료 시 콜백 (실시간 저장용)
    * @returns 모든 결과 배열
-   *
-   * @example
-   * const checker = new ParallelRankChecker();
-   * await checker.checkUrlsWithWorkerPool(requests, 4, async (result, index) => {
-   *   await saveResult(result); // 실시간 저장
-   *   console.log(`[${index}] 완료: ${result.keyword}`);
-   * });
    */
   async checkUrlsWithWorkerPool(
     requests: ParallelRankRequest[],

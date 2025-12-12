@@ -1,5 +1,5 @@
 /**
- * 영수증 CAPTCHA 자동 해결 - Claude Vision API 활용
+ * 영수증 CAPTCHA 자동 해결 - Claude Vision API (Puppeteer/PRB 버전)
  *
  * 네이버 영수증 CAPTCHA 유형:
  * - 질문: "영수증의 가게 위치는 [도로명] [?] 입니다"
@@ -8,7 +8,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-import type { Page } from "patchright";
+import type { Page } from "puppeteer";
 
 interface CaptchaDetectionResult {
   detected: boolean;
@@ -23,9 +23,7 @@ export class ReceiptCaptchaSolver {
   constructor() {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      console.warn(
-        "[CaptchaSolver] ANTHROPIC_API_KEY not set - CAPTCHA solving disabled"
-      );
+      console.log("[CaptchaSolver] ANTHROPIC_API_KEY not set - CAPTCHA solving disabled");
     }
     this.anthropic = new Anthropic({
       apiKey: apiKey || "dummy-key",
@@ -74,7 +72,6 @@ export class ReceiptCaptchaSolver {
 
     // 1. CAPTCHA 감지
     const captchaInfo = await this.detectCaptcha(page);
-    console.log("[CaptchaSolver] detectCaptcha result:", JSON.stringify(captchaInfo));
     if (!captchaInfo.detected) {
       console.log("[CaptchaSolver] 영수증 CAPTCHA 아님 - 다른 유형의 보안 페이지");
       return false;
@@ -109,8 +106,8 @@ export class ReceiptCaptchaSolver {
 
         console.log(`[CaptchaSolver] 시도 ${attempt} 실패, 재시도...`);
         await this.delay(1000);
-      } catch (error) {
-        console.error(`[CaptchaSolver] 시도 ${attempt} 에러:`, error);
+      } catch (error: any) {
+        console.log(`[CaptchaSolver] 시도 ${attempt} 에러: ${error.message}`);
       }
     }
 
@@ -144,7 +141,6 @@ export class ReceiptCaptchaSolver {
     return await page.evaluate(() => {
       const bodyText = document.body.innerText || "";
 
-      // 영수증 CAPTCHA 키워드 체크 (확장)
       const hasReceiptImage = bodyText.includes("영수증") || bodyText.includes("가상으로 제작");
       const hasQuestion = bodyText.includes("무엇입니까") ||
                          bodyText.includes("빈 칸을 채워주세요") ||
@@ -152,7 +148,8 @@ export class ReceiptCaptchaSolver {
                          bodyText.includes("번째 숫자");
       const hasSecurityCheck = bodyText.includes("보안 확인");
 
-      const isCaptcha = (hasReceiptImage || hasSecurityCheck) && hasQuestion;
+      const isReceiptCaptcha = (hasReceiptImage || hasSecurityCheck) && hasQuestion;
+      const isCaptcha = isReceiptCaptcha || hasSecurityCheck || hasReceiptImage;
 
       if (!isCaptcha) {
         return { detected: false, question: "", questionType: "unknown" as const };
@@ -161,7 +158,7 @@ export class ReceiptCaptchaSolver {
       // 질문 텍스트 추출
       let question = "";
 
-      // 방법 1: "무엇입니까?" 형식 질문 찾기
+      // 방법 1: "무엇입니까?" 형식
       const questionMatch = bodyText.match(/.+무엇입니까\??/);
       if (questionMatch) {
         question = questionMatch[0].trim();
@@ -181,7 +178,7 @@ export class ReceiptCaptchaSolver {
         }
       }
 
-      // 방법 3: 기존 "[?]" 패턴
+      // 방법 3: "[?]" 패턴
       if (!question) {
         const match = bodyText.match(/영수증의\s+.+?\s+\[?\?\]?\s*입니다/);
         if (match) {
@@ -208,7 +205,7 @@ export class ReceiptCaptchaSolver {
       }
 
       if (!question) {
-        question = bodyText.substring(0, 300); // fallback
+        question = bodyText.substring(0, 300);
       }
 
       // 질문 유형 판별
@@ -248,9 +245,9 @@ export class ReceiptCaptchaSolver {
       const imageElement = await page.$(selector);
       if (imageElement) {
         try {
-          const buffer = await imageElement.screenshot();
+          const buffer = await imageElement.screenshot({ encoding: "base64" });
           console.log(`[CaptchaSolver] 이미지 캡처 성공: ${selector}`);
-          return buffer.toString('base64');
+          return buffer as string;
         } catch {
           continue;
         }
@@ -269,9 +266,9 @@ export class ReceiptCaptchaSolver {
       const area = await page.$(selector);
       if (area) {
         try {
-          const buffer = await area.screenshot();
+          const buffer = await area.screenshot({ encoding: "base64" });
           console.log(`[CaptchaSolver] 영역 캡처 성공: ${selector}`);
-          return buffer.toString('base64');
+          return buffer as string;
         } catch {
           continue;
         }
@@ -280,8 +277,8 @@ export class ReceiptCaptchaSolver {
 
     // fallback: 전체 페이지 스크린샷
     console.log("[CaptchaSolver] 전체 페이지 캡처");
-    const buffer = await page.screenshot();
-    return buffer.toString('base64');
+    const buffer = await page.screenshot({ encoding: "base64" });
+    return buffer as string;
   }
 
   /**
@@ -352,32 +349,6 @@ export class ReceiptCaptchaSolver {
   }
 
   /**
-   * 랜덤 딜레이 (사람처럼)
-   */
-  private randomDelay(min: number, max: number): Promise<void> {
-    const ms = Math.floor(Math.random() * (max - min + 1)) + min;
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  /**
-   * 사람처럼 타이핑
-   */
-  private async humanType(page: Page, selector: string, text: string): Promise<void> {
-    const input = await page.$(selector);
-    if (!input) throw new Error(`Input not found: ${selector}`);
-
-    await input.click();
-    await this.randomDelay(100, 300);
-
-    for (const char of text) {
-      await page.keyboard.type(char);
-      await this.randomDelay(50, 180);
-    }
-
-    await this.randomDelay(200, 500);
-  }
-
-  /**
    * 답 입력 및 제출
    */
   private async submitAnswer(page: Page, answer: string): Promise<void> {
@@ -396,16 +367,20 @@ export class ReceiptCaptchaSolver {
       try {
         await page.waitForSelector(selector, { timeout: 2000 });
 
+        // 기존 값 지우기
         const input = await page.$(selector);
         if (input) {
           await input.click();
-          await this.randomDelay(50, 150);
-          await page.keyboard.press('Control+A');
-          await this.randomDelay(30, 80);
+          await this.delay(100);
+          await page.keyboard.down('Control');
+          await page.keyboard.press('KeyA');
+          await page.keyboard.up('Control');
+          await this.delay(50);
           await page.keyboard.press('Backspace');
-          await this.randomDelay(100, 200);
+          await this.delay(100);
         }
 
+        // 답 입력 (사람처럼)
         await this.humanType(page, selector, answer);
         inputFound = true;
         console.log(`[CaptchaSolver] 답 입력 완료: ${selector}`);
@@ -419,7 +394,7 @@ export class ReceiptCaptchaSolver {
       throw new Error("CAPTCHA input field not found");
     }
 
-    await this.randomDelay(300, 700);
+    await this.delay(500);
 
     // 확인 버튼 클릭
     const buttonSelectors = [
@@ -436,8 +411,6 @@ export class ReceiptCaptchaSolver {
       try {
         const button = await page.$(selector);
         if (button) {
-          await button.hover();
-          await this.randomDelay(100, 300);
           await button.click();
           console.log(`[CaptchaSolver] 확인 버튼 클릭: ${selector}`);
           break;
@@ -447,8 +420,26 @@ export class ReceiptCaptchaSolver {
       }
     }
 
+    // 버튼을 못 찾으면 Enter 키
     await page.keyboard.press("Enter");
     await this.delay(2000);
+  }
+
+  /**
+   * 사람처럼 타이핑
+   */
+  private async humanType(page: Page, selector: string, text: string): Promise<void> {
+    const input = await page.$(selector);
+    if (!input) throw new Error(`Input not found: ${selector}`);
+
+    await input.click();
+    await this.delay(150);
+
+    for (const char of text) {
+      await page.keyboard.type(char, { delay: 50 + Math.random() * 100 });
+    }
+
+    await this.delay(300);
   }
 
   /**

@@ -74,6 +74,34 @@ function parseArgs() {
   return { workers, limit };
 }
 
+// ✅ slot_naver에서 기존 MID 조회 (URL 기준)
+async function getCachedMids(urls: string[]): Promise<Map<string, string>> {
+  const midMap = new Map<string, string>();
+
+  if (urls.length === 0) return midMap;
+
+  // URL로 slot_naver에서 mid 조회
+  const { data, error } = await supabase
+    .from('slot_naver')
+    .select('link_url, mid')
+    .in('link_url', urls)
+    .not('mid', 'is', null);
+
+  if (error) {
+    console.warn('⚠️ MID 캐시 조회 실패:', error.message);
+    return midMap;
+  }
+
+  for (const row of data || []) {
+    if (row.mid) {
+      midMap.set(row.link_url, row.mid);
+    }
+  }
+
+  console.log(`📦 캐시된 MID: ${midMap.size}개 / ${urls.length}개`);
+  return midMap;
+}
+
 // 타임아웃된 작업 복구
 async function recoverStaleKeywords(): Promise<number> {
   const staleTime = new Date(Date.now() - STALE_TIMEOUT_MS).toISOString();
@@ -283,11 +311,16 @@ async function main() {
 
   console.log(`✅ ${keywords.length}개 키워드 할당 완료\n`);
 
-  // 요청 배열 생성
+  // ✅ slot_naver에서 기존 MID 조회
+  const urls = keywords.map((k) => k.link_url);
+  const cachedMidMap = await getCachedMids(urls);
+
+  // 요청 배열 생성 (cachedMid 포함)
   const requests = keywords.map((k) => ({
     url: k.link_url,
     keyword: k.keyword,
     maxPages: MAX_PAGES,
+    cachedMid: cachedMidMap.get(k.link_url), // ✅ 있으면 URL 방문 skip
   }));
 
   const startTime = Date.now();
