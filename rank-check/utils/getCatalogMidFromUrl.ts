@@ -1,3 +1,47 @@
+import { ReceiptCaptchaSolver } from './ReceiptCaptchaSolver';
+
+// 캡챠 솔버 인스턴스 (재사용)
+let captchaSolver: ReceiptCaptchaSolver | null = null;
+
+function getCaptchaSolver(): ReceiptCaptchaSolver {
+  if (!captchaSolver) {
+    captchaSolver = new ReceiptCaptchaSolver();
+  }
+  return captchaSolver;
+}
+
+/**
+ * 캡챠 감지 및 해결
+ */
+async function detectAndSolveCaptcha(page: any): Promise<boolean> {
+  const pageContent = await page.evaluate(() => document.body.innerText || "");
+  const pageTitle = await page.title();
+
+  const hasCaptcha =
+    pageContent.includes("보안 확인") ||
+    pageContent.includes("영수증") ||
+    pageTitle.includes("보안") ||
+    pageTitle.includes("확인");
+
+  if (!hasCaptcha) {
+    return false; // 캡챠 없음
+  }
+
+  console.log(`🛑 캡챠 감지됨 - 해결 시도 중...`);
+
+  const solver = getCaptchaSolver();
+  const solved = await solver.solve(page);
+
+  if (solved) {
+    console.log(`✅ 캡챠 해결 성공!`);
+    await new Promise(r => setTimeout(r, 2000));
+    return true;
+  } else {
+    console.log(`❌ 캡챠 해결 실패`);
+    return false;
+  }
+}
+
 /**
  * 스마트스토어 URL에서 실제 Catalog MID(nvMid)를 추출
  *
@@ -60,6 +104,18 @@ export async function getCatalogMidFromUrl(
 
     // 추가 대기 (느린 네트워크 대응)
     await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // 캡챠 감지 및 해결
+    const captchaSolved = await detectAndSolveCaptcha(page);
+    if (captchaSolved) {
+      // 캡챠 해결 후 페이지 새로고침
+      console.log(`🔄 페이지 새로고침 중...`);
+      await page.goto(productUrl, {
+        waitUntil: "networkidle2",
+        timeout: 20000,
+      });
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
 
     // 스크롤하여 추가 API 트리거
     await page.evaluate(() => window.scrollBy(0, 500));
