@@ -125,7 +125,7 @@ async function recoverStaleKeywords(): Promise<number> {
   return data?.length || 0;
 }
 
-// 작업 할당
+// 작업 할당 (pending + 24시간 지난 waiting)
 async function claimKeywords(claimLimit: number): Promise<any[]> {
   const { data: rpcData, error: rpcError } = await supabase.rpc('claim_keywords', {
     p_worker_id: WORKER_ID,
@@ -136,19 +136,34 @@ async function claimKeywords(claimLimit: number): Promise<any[]> {
     return rpcData;
   }
 
-  // Fallback
-  const { data: pendingIds, error: selectError } = await supabase
+  // Fallback: pending 가져오기
+  const { data: pendingData } = await supabase
     .from('keywords_navershopping')
     .select('id, status')
     .eq('status', 'pending')
     .order('id', { ascending: false })
     .limit(claimLimit);
 
-  if (selectError || !pendingIds || pendingIds.length === 0) {
+  // 24시간 지난 waiting 가져오기
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { data: waitingData } = await supabase
+    .from('keywords_navershopping')
+    .select('id, status')
+    .eq('status', 'waiting')
+    .lt('started_at', twentyFourHoursAgo)
+    .order('id', { ascending: false })
+    .limit(claimLimit);
+
+  const allIds = [
+    ...(pendingData || []).map(r => r.id),
+    ...(waitingData || []).map(r => r.id),
+  ].slice(0, claimLimit);
+
+  if (allIds.length === 0) {
     return [];
   }
 
-  const ids = pendingIds.map((r) => r.id);
+  console.log(`   📋 pending: ${pendingData?.length || 0}개, waiting(24h+): ${waitingData?.length || 0}개`);
 
   const { data: claimed, error: updateError } = await supabase
     .from('keywords_navershopping')
@@ -157,8 +172,8 @@ async function claimKeywords(claimLimit: number): Promise<any[]> {
       worker_id: WORKER_ID,
       started_at: new Date().toISOString(),
     })
-    .in('id', ids)
-    .eq('status', 'pending')
+    .in('id', allIds)
+    .in('status', ['pending', 'waiting'])
     .select();
 
   if (updateError) {
@@ -258,24 +273,21 @@ async function processResult(
     console.log(`   🗑️  완료 - 삭제됨`);
   } else {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 순위 미발견 (상품 문제 - 재시도 1회)
+    // 순위 미발견 → 24시간 후 재시도
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     console.log(`   ❌ 600위 내 미발견`);
     notFoundCount++;
 
-    const currentRetryCount = keywordRecord.retry_count || 0;
-    if (currentRetryCount >= 1) {
-      await supabase.from('keywords_navershopping').delete().eq('id', keywordRecord.id);
-      console.log(`   ⛔ 미발견 2회 - 삭제됨`);
-    } else {
-      await supabase.from('keywords_navershopping').update({
-        retry_count: currentRetryCount + 1,
-        status: 'pending',
-        worker_id: null,
-        started_at: null,
-      }).eq('id', keywordRecord.id);
-      console.log(`   🔄 미발견 재시도 (${currentRetryCount + 1}/1)`);
-    }
+    // slot_naver에 미발견(-1) 기록
+    await saveRankToSlotNaver(supabase, keywordRecord, null);
+
+    // 24시간 후 재시도 (status='waiting', started_at=현재시간)
+    await supabase.from('keywords_navershopping').update({
+      status: 'waiting',
+      worker_id: null,
+      started_at: new Date().toISOString(), // 24시간 기준 시점
+    }).eq('id', keywordRecord.id);
+    console.log(`   ⏰ 24시간 후 재시도 예정`);
   }
 }
 
