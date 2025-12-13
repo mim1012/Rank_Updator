@@ -65,6 +65,51 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * slot_naver에서 기존 MID 조회 (URL 방문 스킵용)
+ * MID가 있으면 스마트스토어 방문 없이 바로 네이버 검색 가능
+ */
+async function getCachedMidFromSlotNaver(
+  keyword: string,
+  linkUrl: string,
+  slotId?: number | null
+): Promise<string | null> {
+  try {
+    // 1. slot_id로 먼저 검색 (가장 정확)
+    if (slotId) {
+      const { data } = await supabase
+        .from('slot_naver')
+        .select('mid, product_name')
+        .eq('id', slotId)
+        .maybeSingle();
+
+      if (data?.mid) {
+        console.log(`   ⚡ 캐시된 MID 발견 (slot_id): ${data.mid}`);
+        return data.mid;
+      }
+    }
+
+    // 2. keyword + link_url로 검색
+    const { data } = await supabase
+      .from('slot_naver')
+      .select('mid, product_name')
+      .eq('keyword', keyword)
+      .eq('link_url', linkUrl)
+      .not('mid', 'is', null)
+      .limit(1)
+      .maybeSingle();
+
+    if (data?.mid) {
+      console.log(`   ⚡ 캐시된 MID 발견 (keyword+url): ${data.mid}`);
+      return data.mid;
+    }
+
+    return null;
+  } catch (error) {
+    return null;
+  }
+}
+
 function parseArgs() {
   const args = process.argv.slice(2);
   let limit: number | null = null;
@@ -231,11 +276,27 @@ async function main() {
     try {
       // 3. ParallelRankChecker로 병렬 순위 체크
       const checker = new ParallelRankChecker();
-      const requests = batch.map((k) => ({
-        url: k.link_url,
-        keyword: k.keyword,
-        maxPages: MAX_PAGES,
-      }));
+
+      // ✅ slot_naver에서 기존 MID 조회 (URL 방문 스킵)
+      console.log(`🔍 캐시된 MID 조회 중...`);
+      const requests = await Promise.all(
+        batch.map(async (k) => {
+          const cachedMid = await getCachedMidFromSlotNaver(
+            k.keyword,
+            k.link_url,
+            k.slot_id
+          );
+          return {
+            url: k.link_url,
+            keyword: k.keyword,
+            maxPages: MAX_PAGES,
+            cachedMid: cachedMid || undefined,  // ✅ MID 있으면 URL 방문 스킵
+          };
+        })
+      );
+
+      const cachedCount = requests.filter(r => r.cachedMid).length;
+      console.log(`   📦 캐시된 MID: ${cachedCount}/${batch.length}개 (URL 방문 스킵)`);
 
       console.log(`🔍 병렬 순위 체크 시작 (${batch.length}개)\n`);
       const results = await checker.checkUrls(requests);
