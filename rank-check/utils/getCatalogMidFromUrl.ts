@@ -42,6 +42,11 @@ async function detectAndSolveCaptcha(page: any): Promise<boolean> {
   }
 }
 
+export interface CatalogMidResult {
+  mid: string | null;
+  captchaFailed: boolean;
+}
+
 /**
  * 스마트스토어 URL에서 실제 Catalog MID(nvMid)를 추출
  *
@@ -50,12 +55,14 @@ async function detectAndSolveCaptcha(page: any): Promise<boolean> {
  *
  * @param page - Puppeteer Page 객체
  * @param productUrl - 스마트스토어 상품 URL
- * @returns Catalog MID (nvMid) 또는 null
+ * @returns Catalog MID 결과 (mid, captchaFailed)
  */
 export async function getCatalogMidFromUrl(
   page: any,
   productUrl: string
-): Promise<string | null> {
+): Promise<CatalogMidResult> {
+  let captchaFailed = false;
+
   try {
     console.log(`📦 상품 페이지 방문: ${productUrl.substring(0, 80)}...`);
 
@@ -106,15 +113,29 @@ export async function getCatalogMidFromUrl(
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     // 캡챠 감지 및 해결
-    const captchaSolved = await detectAndSolveCaptcha(page);
-    if (captchaSolved) {
-      // 캡챠 해결 후 페이지 새로고침
-      console.log(`🔄 페이지 새로고침 중...`);
-      await page.goto(productUrl, {
-        waitUntil: "domcontentloaded",
-        timeout: 20000,
-      });
-      await new Promise(resolve => setTimeout(resolve, 2000));
+    const pageContent = await page.evaluate(() => document.body.innerText || "");
+    const pageTitle = await page.title();
+    const hasCaptcha =
+      pageContent.includes("보안 확인") ||
+      pageContent.includes("영수증") ||
+      pageTitle.includes("보안") ||
+      pageTitle.includes("확인");
+
+    if (hasCaptcha) {
+      const captchaSolved = await detectAndSolveCaptcha(page);
+      if (captchaSolved) {
+        // 캡챠 해결 후 페이지 새로고침
+        console.log(`🔄 페이지 새로고침 중...`);
+        await page.goto(productUrl, {
+          waitUntil: "domcontentloaded",
+          timeout: 20000,
+        });
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } else {
+        // 캡챠 해결 실패
+        captchaFailed = true;
+        console.log(`🛑 캡챠 해결 실패 - 재시도 큐로 이동 예정`);
+      }
     }
 
     // 스크롤하여 추가 API 트리거
@@ -127,7 +148,7 @@ export async function getCatalogMidFromUrl(
 
     if (catalogMid) {
       console.log(`✅ API 요청에서 Catalog MID 추출: ${catalogMid}`);
-      return catalogMid;
+      return { mid: catalogMid, captchaFailed };
     }
 
     // 대체 방법 1: URL에서 리다이렉트된 catalog MID 확인
@@ -136,7 +157,7 @@ export async function getCatalogMidFromUrl(
       const match = currentUrl.match(/\/catalog\/(\d+)/);
       if (match) {
         console.log(`✅ 리다이렉트 URL에서 MID 추출: ${match[1]}`);
-        return match[1];
+        return { mid: match[1], captchaFailed };
       }
     }
 
@@ -165,7 +186,7 @@ export async function getCatalogMidFromUrl(
 
     if (sourceMid) {
       console.log(`✅ 페이지 소스에서 MID 추출: ${sourceMid}`);
-      return sourceMid;
+      return { mid: sourceMid, captchaFailed };
     }
 
     // 대체 방법 3: 네이버 쇼핑 연동 API에서 추출 (스크립트 태그)
@@ -182,7 +203,7 @@ export async function getCatalogMidFromUrl(
 
     if (scriptMid) {
       console.log(`✅ 스크립트에서 MID 추출: ${scriptMid}`);
-      return scriptMid;
+      return { mid: scriptMid, captchaFailed };
     }
 
     // 대체 방법 4: meta 태그에서 추출
@@ -199,26 +220,27 @@ export async function getCatalogMidFromUrl(
 
     if (metaMid) {
       console.log(`✅ 메타 태그에서 MID 추출: ${metaMid}`);
-      return metaMid;
+      return { mid: metaMid, captchaFailed };
     }
 
     // 디버깅: 실제 로드된 페이지 정보 출력
-    const pageTitle = await page.title();
+    const debugTitle = await page.title();
     const finalUrl = page.url();
     console.log(`⚠️ Catalog MID를 찾을 수 없습니다`);
     console.log(`   📍 최종 URL: ${finalUrl.substring(0, 100)}...`);
-    console.log(`   📄 페이지 제목: ${pageTitle}`);
+    console.log(`   📄 페이지 제목: ${debugTitle}`);
 
     // 차단 페이지 감지
-    if (pageTitle.includes('보안') || pageTitle.includes('확인') ||
+    if (debugTitle.includes('보안') || debugTitle.includes('확인') ||
         finalUrl.includes('captcha') || finalUrl.includes('security')) {
       console.log(`   🛑 차단/보안 페이지 감지됨!`);
+      captchaFailed = true;
     }
 
-    return null;
+    return { mid: null, captchaFailed };
   } catch (error: any) {
     console.error(`❌ Catalog MID 추출 실패: ${error.message}`);
-    return null;
+    return { mid: null, captchaFailed };
   }
 }
 

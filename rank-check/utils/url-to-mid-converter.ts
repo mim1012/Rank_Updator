@@ -13,7 +13,7 @@ import { getCatalogMidFromUrl, isSmartStoreUrl } from './getCatalogMidFromUrl';
 
 export interface MidExtractionResult {
   mid: string | null;
-  source: 'direct' | 'catalog' | 'failed';
+  source: 'direct' | 'catalog' | 'failed' | 'captcha_failed';
   originalUrl: string;
 }
 
@@ -41,16 +41,27 @@ export async function urlToMid(
   // 스마트스토어 URL은 무조건 카탈로그 MID 변환 필요
   if (isSmartStoreUrl(url) && page) {
     console.log(`   🔄 스마트스토어 URL → 카탈로그 MID 변환 중...`);
-    const catalogMid = await getCatalogMidFromUrl(page, url);
+    const catalogResult = await getCatalogMidFromUrl(page, url);
 
-    if (catalogMid) {
+    if (catalogResult.mid) {
       return {
-        mid: catalogMid,
+        mid: catalogResult.mid,
         source: 'catalog',
         originalUrl: url,
       };
     }
-    // 카탈로그 MID 없음 → 스마트스토어 상품 ID로 직접 검색
+
+    // 캡챠 실패 시 → 재시도 큐로 (상품 ID 직접 검색 안 함)
+    if (catalogResult.captchaFailed) {
+      console.log(`   🔄 캡챠 실패 → pending으로 재시도 예정`);
+      return {
+        mid: null,
+        source: 'captcha_failed',
+        originalUrl: url,
+      };
+    }
+
+    // 카탈로그 MID 없음 (캡챠 아닌 경우) → 스마트스토어 상품 ID로 직접 검색
     const directMid = extractMidFromUrl(url);
     if (directMid) {
       console.log(`   ℹ️  카탈로그 미등록 상품 → 상품 ID로 검색: ${directMid}`);

@@ -191,7 +191,20 @@ async function processResult(
 ): Promise<void> {
   console.log(`\n📝 저장: ${keywordRecord.keyword}`);
 
-  // MID 추출 실패
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 캡챠 실패 → pending으로 재시도 (retry_count 증가 없이)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  if (result.midSource === 'captcha_failed') {
+    console.log(`   🛑 캡챠 실패 - pending으로 재시도 예정`);
+    await supabase.from('keywords_navershopping').update({
+      status: 'pending',
+      worker_id: null,
+      started_at: null,
+    }).eq('id', keywordRecord.id);
+    return;
+  }
+
+  // MID 추출 실패 (캡챠 아닌 경우)
   if (result.midSource === 'failed' || result.error === 'MID 추출 실패') {
     console.log(`   ❌ MID 추출 실패`);
     failedCount++;

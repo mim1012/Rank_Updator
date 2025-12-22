@@ -34,7 +34,7 @@ export interface ParallelRankResult {
   keyword: string;
   productName?: string;
   mid: string | null;
-  midSource: 'direct' | 'catalog' | 'cached' | 'failed';  // ✅ cached 추가
+  midSource: 'direct' | 'catalog' | 'cached' | 'failed' | 'captcha_failed';
   rank: RankResult | null;
   duration: number;
   error?: string;
@@ -91,15 +91,17 @@ export class ParallelRankChecker {
 
         if (!midResult.mid) {
           await browser.close();
+          // 캡챠 실패 시 별도 처리
+          const isCaptchaFailed = midResult.source === 'captcha_failed';
           return {
             url: request.url,
             keyword: request.keyword,
             productName: request.productName,
             mid: null,
-            midSource: 'failed',
+            midSource: isCaptchaFailed ? 'captcha_failed' : 'failed',
             rank: null,
             duration: Date.now() - startTime,
-            error: 'MID 추출 실패',
+            error: isCaptchaFailed ? '캡챠 실패 - 재시도 필요' : 'MID 추출 실패',
           };
         }
 
