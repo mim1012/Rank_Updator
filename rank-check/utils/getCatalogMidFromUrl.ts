@@ -96,9 +96,9 @@ export async function getCatalogMidFromUrl(
     page.on('request', requestHandler);
     page.on('response', responseHandler);
 
-    // 상품 페이지로 이동 (networkidle2로 API 완료 대기)
+    // 상품 페이지로 이동 (domcontentloaded - Puppeteer/Playwright 호환)
     await page.goto(productUrl, {
-      waitUntil: "networkidle2",
+      waitUntil: "domcontentloaded",
       timeout: 20000,
     });
 
@@ -111,7 +111,7 @@ export async function getCatalogMidFromUrl(
       // 캡챠 해결 후 페이지 새로고침
       console.log(`🔄 페이지 새로고침 중...`);
       await page.goto(productUrl, {
-        waitUntil: "networkidle2",
+        waitUntil: "domcontentloaded",
         timeout: 20000,
       });
       await new Promise(resolve => setTimeout(resolve, 2000));

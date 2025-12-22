@@ -1,4 +1,5 @@
-import type { Page } from "puppeteer";
+// Page 타입: Puppeteer/Playwright 모두 호환 (any 사용)
+type Page = any;
 import { humanScroll, humanType } from "./utils/humanBehavior";
 
 export interface RankResult {

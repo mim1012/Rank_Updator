@@ -6,7 +6,8 @@
  * 실패 시 스마트스토어 → 카탈로그 MID 변환을 시도합니다.
  */
 
-import type { Page } from 'puppeteer';
+// Page 타입: Puppeteer/Playwright 모두 호환 (any 사용)
+type Page = any;
 import { extractMidFromUrl } from './extractMidFromUrl';
 import { getCatalogMidFromUrl, isSmartStoreUrl } from './getCatalogMidFromUrl';
 

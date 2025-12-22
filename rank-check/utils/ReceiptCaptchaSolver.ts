@@ -8,7 +8,9 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-import type { Page } from "puppeteer";
+
+// Page 타입: Puppeteer/Playwright 모두 호환 (any 사용)
+type Page = any;
 
 interface CaptchaDetectionResult {
   detected: boolean;
@@ -223,6 +225,16 @@ export class ReceiptCaptchaSolver {
   }
 
   /**
+   * 스크린샷 결과를 base64 문자열로 변환 (Puppeteer/Playwright 호환)
+   */
+  private toBase64(buffer: Buffer | string): string {
+    if (typeof buffer === 'string') {
+      return buffer; // Puppeteer with encoding: "base64"
+    }
+    return buffer.toString('base64'); // Playwright returns Buffer
+  }
+
+  /**
    * 영수증 이미지 캡처
    */
   private async captureReceiptImage(page: Page): Promise<string> {
@@ -245,9 +257,10 @@ export class ReceiptCaptchaSolver {
       const imageElement = await page.$(selector);
       if (imageElement) {
         try {
-          const buffer = await imageElement.screenshot({ encoding: "base64" });
+          // Playwright는 encoding 옵션이 없으므로 Buffer 반환
+          const buffer = await imageElement.screenshot();
           console.log(`[CaptchaSolver] 이미지 캡처 성공: ${selector}`);
-          return buffer as string;
+          return this.toBase64(buffer);
         } catch {
           continue;
         }
@@ -266,9 +279,9 @@ export class ReceiptCaptchaSolver {
       const area = await page.$(selector);
       if (area) {
         try {
-          const buffer = await area.screenshot({ encoding: "base64" });
+          const buffer = await area.screenshot();
           console.log(`[CaptchaSolver] 영역 캡처 성공: ${selector}`);
-          return buffer as string;
+          return this.toBase64(buffer);
         } catch {
           continue;
         }
@@ -277,8 +290,8 @@ export class ReceiptCaptchaSolver {
 
     // fallback: 전체 페이지 스크린샷
     console.log("[CaptchaSolver] 전체 페이지 캡처");
-    const buffer = await page.screenshot({ encoding: "base64" });
-    return buffer as string;
+    const buffer = await page.screenshot();
+    return this.toBase64(buffer);
   }
 
   /**
