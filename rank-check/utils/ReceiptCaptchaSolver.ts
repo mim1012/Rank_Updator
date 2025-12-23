@@ -227,11 +227,24 @@ export class ReceiptCaptchaSolver {
   /**
    * 스크린샷 결과를 base64 문자열로 변환 (Puppeteer/Playwright 호환)
    */
-  private toBase64(buffer: Buffer | string): string {
+  private toBase64(buffer: Buffer | string | Uint8Array): string {
     if (typeof buffer === 'string') {
-      return buffer; // Puppeteer with encoding: "base64"
+      // 이미 base64 문자열인 경우
+      // data:image/png;base64, 접두사 제거
+      if (buffer.startsWith('data:')) {
+        return buffer.split(',')[1] || buffer;
+      }
+      return buffer;
     }
-    return buffer.toString('base64'); // Playwright returns Buffer
+
+    // Uint8Array나 Buffer를 base64로 변환
+    if (buffer instanceof Uint8Array || Buffer.isBuffer(buffer)) {
+      return Buffer.from(buffer).toString('base64');
+    }
+
+    // 그 외의 경우 (예상치 못한 타입)
+    console.log(`[CaptchaSolver] 예상치 못한 buffer 타입: ${typeof buffer}`);
+    return String(buffer);
   }
 
   /**
