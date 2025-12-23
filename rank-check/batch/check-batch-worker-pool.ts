@@ -30,7 +30,7 @@ import * as os from 'os';
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const DEFAULT_WORKERS = 4;
 const MAX_PAGES = parseInt(process.env.MAX_PAGES || '15', 10);
-const STALE_TIMEOUT_MS = 5 * 60 * 1000; // 5분 (타임아웃 복구)
+const STALE_TIMEOUT_MS = 30 * 60 * 1000; // 30분 (타임아웃 복구)
 const STALE_CHECK_INTERVAL_MS = 60 * 1000; // 1분마다 stale 체크
 
 // 차단 감지 설정
@@ -184,59 +184,19 @@ async function claimKeywords(claimLimit: number): Promise<any[]> {
   return claimed || [];
 }
 
-// 단일 결과 처리 (실시간 저장)
+// 단일 결과 처리 (순위 발견 시 저장, 결과와 상관없이 삭제)
 async function processResult(
   result: ParallelRankResult,
   keywordRecord: KeywordRecord
 ): Promise<void> {
-  console.log(`\n📝 저장: ${keywordRecord.keyword}`);
+  console.log(`\n📝 처리: ${keywordRecord.keyword}`);
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 캡챠 실패 → pending으로 재시도 (retry_count 증가 없이)
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  if (result.midSource === 'captcha_failed') {
-    console.log(`   🛑 캡챠 실패 - pending으로 재시도 예정`);
-    await supabase.from('keywords_navershopping').update({
-      status: 'pending',
-      worker_id: null,
-      started_at: null,
-    }).eq('id', keywordRecord.id);
-    return;
-  }
-
-  // MID 추출 실패 (캡챠 아닌 경우)
-  if (result.midSource === 'failed' || result.error === 'MID 추출 실패') {
-    console.log(`   ❌ MID 추출 실패`);
-    failedCount++;
-
-    const currentRetryCount = keywordRecord.retry_count || 0;
-    if (currentRetryCount >= 2) {
-      await supabase.from('keywords_navershopping').delete().eq('id', keywordRecord.id);
-      console.log(`   ⛔ MID 추출 3회 실패 - 삭제됨`);
-    } else {
-      await supabase.from('keywords_navershopping').update({
-        retry_count: currentRetryCount + 1,
-        status: 'pending',
-        worker_id: null,
-        started_at: null,
-      }).eq('id', keywordRecord.id);
-      console.log(`   🔄 재시도 (${currentRetryCount + 1}/2)`);
-    }
-
-    // slot_naver에 MID 실패 기록
-    await saveRankToSlotNaver(supabase, keywordRecord, null);
-    return;
-  }
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 차단 감지 (서버 문제 - 재시도 3회)
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 차단 감지 (IP 로테이션만 처리)
   if (result.blocked) {
     blockedCount++;
     consecutiveBlocked++;
     console.log(`   🛑 차단 감지 (연속 ${consecutiveBlocked}개)`);
 
-    // IP 로테이션 (연속 5개 차단 시)
     if (consecutiveBlocked >= BLOCK_THRESHOLD) {
       console.log(`\n🔄 IP 로테이션 실행...`);
       const rotationResult = await rotateIP();
@@ -246,62 +206,29 @@ async function processResult(
       consecutiveBlocked = 0;
       await new Promise((r) => setTimeout(r, IP_ROTATION_COOLDOWN_MS));
     }
-
-    // 차단은 서버 문제 → 재시도 3회 허용
-    const currentRetryCount = keywordRecord.retry_count || 0;
-    if (currentRetryCount >= 3) {
-      await supabase.from('keywords_navershopping').delete().eq('id', keywordRecord.id);
-      console.log(`   ⛔ 차단 4회 - 삭제됨`);
-    } else {
-      await supabase.from('keywords_navershopping').update({
-        retry_count: currentRetryCount + 1,
-        status: 'pending',
-        worker_id: null,
-        started_at: null,
-      }).eq('id', keywordRecord.id);
-      console.log(`   🔄 차단 재시도 (${currentRetryCount + 1}/3)`);
-    }
-    return; // 차단 시 저장하지 않고 종료
+  } else {
+    consecutiveBlocked = 0;
   }
 
-  consecutiveBlocked = 0; // 차단 아니면 연속 카운트 리셋
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 순위 결과 처리
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 순위 발견 → 저장
   if (result.rank && result.rank.totalRank > 0) {
     console.log(`   ✅ 순위: ${result.rank.totalRank}위 (${result.rank.isAd ? '광고' : '오가닉'})`);
     successCount++;
 
-    // Supabase에 저장
     const saveResult = await saveRankToSlotNaver(supabase, keywordRecord, result.rank);
     if (!saveResult.success) {
       console.log(`   ⚠️ 저장 실패: ${saveResult.error}`);
       failedCount++;
-      return;
     }
-
-    // 성공 → 대기열에서 삭제
-    await supabase.from('keywords_navershopping').delete().eq('id', keywordRecord.id);
-    console.log(`   🗑️  완료 - 삭제됨`);
   } else {
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 순위 미발견 → 24시간 후 재시도
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    console.log(`   ❌ 600위 내 미발견`);
+    // 순위 미발견 (차단, MID 실패, 600위 밖 등)
+    console.log(`   ❌ 순위 미발견`);
     notFoundCount++;
-
-    // slot_naver에 미발견(-1) 기록
-    await saveRankToSlotNaver(supabase, keywordRecord, null);
-
-    // 24시간 후 재시도 (status='waiting', started_at=현재시간)
-    await supabase.from('keywords_navershopping').update({
-      status: 'waiting',
-      worker_id: null,
-      started_at: new Date().toISOString(), // 24시간 기준 시점
-    }).eq('id', keywordRecord.id);
-    console.log(`   ⏰ 24시간 후 재시도 예정`);
   }
+
+  // 결과와 상관없이 무조건 삭제
+  await supabase.from('keywords_navershopping').delete().eq('id', keywordRecord.id);
+  console.log(`   🗑️ 삭제 완료`);
 }
 
 async function main() {
