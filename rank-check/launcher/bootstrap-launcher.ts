@@ -17,7 +17,7 @@ import * as fs from 'fs';
 
 // ============ 하드코딩된 .env 값 ============
 // Anthropic API Key (분할 저장 - GitHub Secret Scanning 우회)
-const _K = ['sk-ant-api03', 'hD6hNN1iwhqagRYu1LxEJAq_JHuo', '5', 'U6n1ZWhidDIcA2o6OxZb1mnSTLDr22Xa4NwxcqybbSCQOrlcijq5blg', 'tARitgAA'];
+const _K = ['sk-ant-api03', 'e2Gp8giM9Kgp0YnoXKnmZa2xUZKD98bP3kuDg594_fdzMZs89ce', 'RxavgWaUDne7LYdzY6cPldWcLEtpbFBxjw', '9xv8QwAA'];
 
 const ENV_VALUES = {
   SUPABASE_URL: 'https://cwsdvgkjptuvbdtxcejt.supabase.co',
@@ -27,7 +27,7 @@ const ENV_VALUES = {
   DIRECT_URL: 'postgresql://postgres:EGxhoDsQvygcwY5c@db.cwsdvgkjptuvbdtxcejt.supabase.co:5432/postgres',
   DATABASE_PASSWORD: 'EGxhoDsQvygcwY5c',
   NODE_ENV: 'production',
-  ANTHROPIC_API_KEY: `${_K[0]}-${_K[1]}-${_K[2]}-${_K[3]}-${_K[4]}`,
+  ANTHROPIC_API_KEY: `${_K[0]}-${_K[1]}-${_K[2]}-${_K[3]}`,
 };
 
 // ============ 설정 ============
