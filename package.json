@@ -8,7 +8,7 @@
     "dev:windows": "npx cross-env NODE_ENV=development tsx watch server/_core/index.ts",
     "build": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "build:launcher": "npx esbuild rank-check/launcher/bootstrap-launcher.ts --bundle --platform=node --outfile=dist/bootstrap-launcher.js",
-    "build:exe": "pnpm build:launcher && npx @yao-pkg/pkg dist/bootstrap-launcher.js --targets node20-win-x64 --output bin/turafic-launcher.exe",
+    "build:exe": "pnpm build:launcher && npx @yao-pkg/pkg dist/bootstrap-launcher.js --targets node20-win-x64 --output bin/naverrank-launcher.exe",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
