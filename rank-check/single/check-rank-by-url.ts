@@ -59,12 +59,12 @@ async function main() {
     // 스마트스토어 URL인 경우, 상품 페이지에서 실제 Catalog MID 추출
     if (isSmartStoreUrl(productUrl)) {
       console.log(`   스마트스토어 URL 감지 → 상품 페이지 방문하여 Catalog MID 추출`);
-      const catalogMid = await getCatalogMidFromUrl(page as any, productUrl);
+      const catalogMidResult = await getCatalogMidFromUrl(page as any, productUrl);
 
-      if (catalogMid) {
+      if (catalogMidResult.mid) {
         console.log(`   ✅ Channel Product No: ${mid}`);
-        console.log(`   ✅ Catalog MID (검색용): ${catalogMid}`);
-        mid = catalogMid;
+        console.log(`   ✅ Catalog MID (검색용): ${catalogMidResult.mid}`);
+        mid = catalogMidResult.mid;
       } else {
         console.log(`   ⚠️ Catalog MID 추출 실패, Channel Product No 사용: ${mid}`);
       }

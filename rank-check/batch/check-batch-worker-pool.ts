@@ -74,27 +74,39 @@ function parseArgs() {
   return { workers, limit };
 }
 
-// ✅ slot_naver에서 기존 MID 조회 (URL 기준)
+// ✅ slot_naver에서 기존 MID 조회 (URL 기준, 청크 분할)
 async function getCachedMids(urls: string[]): Promise<Map<string, string>> {
   const midMap = new Map<string, string>();
 
   if (urls.length === 0) return midMap;
 
-  // URL로 slot_naver에서 mid 조회
-  const { data, error } = await supabase
-    .from('slot_naver')
-    .select('link_url, mid')
-    .in('link_url', urls)
-    .not('mid', 'is', null);
-
-  if (error) {
-    console.warn('⚠️ MID 캐시 조회 실패:', error.message);
-    return midMap;
+  // URL을 50개씩 청크로 분할하여 조회 (요청 크기 제한 회피)
+  const CHUNK_SIZE = 50;
+  const chunks: string[][] = [];
+  for (let i = 0; i < urls.length; i += CHUNK_SIZE) {
+    chunks.push(urls.slice(i, i + CHUNK_SIZE));
   }
 
-  for (const row of data || []) {
-    if (row.mid) {
-      midMap.set(row.link_url, row.mid);
+  for (const chunk of chunks) {
+    try {
+      const { data, error } = await supabase
+        .from('slot_naver')
+        .select('link_url, mid')
+        .in('link_url', chunk)
+        .not('mid', 'is', null);
+
+      if (error) {
+        console.warn(`⚠️ MID 캐시 조회 실패 (청크): ${error.message}`);
+        continue;
+      }
+
+      for (const row of data || []) {
+        if (row.mid) {
+          midMap.set(row.link_url, row.mid);
+        }
+      }
+    } catch (e: any) {
+      console.warn(`⚠️ MID 캐시 조회 네트워크 에러: ${e.message}`);
     }
   }
 

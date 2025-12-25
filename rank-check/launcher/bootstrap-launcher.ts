@@ -2,7 +2,7 @@
  * EXE용 부트스트랩 런처 (원격 PC 배포용)
  *
  * 텔레그램으로 EXE 전달 → 더블클릭만으로:
- * 1. D:\turafic 폴더 생성
+ * 1. D:\naverrank 폴더 생성
  * 2. Git clone/pull
  * 3. .env 파일 자동 생성 (하드코딩된 값)
  * 4. npm install
@@ -31,7 +31,7 @@ const ENV_VALUES = {
 };
 
 // ============ 설정 ============
-const INSTALL_DIR = 'D:\\turafic';
+const INSTALL_DIR = 'D:\\naverrank';
 const GIT_REPO = 'https://github.com/mim1012/Rank_Updator.git';
 const GIT_BRANCH = 'main';
 
@@ -58,7 +58,7 @@ function runCommand(command: string, options: { cwd?: string; silent?: boolean }
 async function main(): Promise<void> {
   console.log('');
   console.log('='.repeat(50));
-  console.log('  Turafic Rank Checker - Auto Installer');
+  console.log('  NaverRank Checker - Auto Installer');
   console.log('='.repeat(50));
   console.log('');
 
