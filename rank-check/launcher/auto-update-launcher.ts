@@ -1,17 +1,15 @@
 #!/usr/bin/env npx tsx
 /**
- * 자동 업데이트 런처
+ * 자동 업데이트 런처 (작업 감시 모드)
  *
  * 기능:
- * - 3분마다 순위 체크 실행
- * - 6번 실행마다 (18분) git 업데이트 확인
- * - 업데이트 발견 시 git pull 후 즉시 반영 (핫 리로드)
+ * - 작업 큐(keywords_navershopping)를 감시하여 즉시 처리
+ * - 작업 있으면: 처리 완료 → 5초 쿨다운 → 다음 배치
+ * - 작업 없으면: 1분 대기 후 재확인
+ * - 18분마다 Git 업데이트 확인 및 pull
  *
  * 사용법:
  *   npx tsx rank-check/launcher/auto-update-launcher.ts
- *
- * 또는 배치 파일:
- *   batch-scripts/run-auto-update.bat
  */
 
 import 'dotenv/config';
@@ -28,15 +26,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // 설정
-const CHECK_INTERVAL_MS = 3 * 60 * 1000; // 3분
-const GIT_CHECK_EVERY = 6; // 6번 실행마다 git 체크 (18분)
+const IDLE_WAIT_MS = 60 * 1000; // 작업 없을 때 대기 시간 (1분)
+const BATCH_COOLDOWN_MS = 5 * 1000; // 배치 완료 후 쿨다운 (5초)
+const GIT_CHECK_INTERVAL_MS = 18 * 60 * 1000; // Git 체크 주기 (18분)
 const GIT_BRANCH = 'main';
 const PROJECT_ROOT = path.resolve(__dirname, '../..');
 
 // 상태
 let runCount = 0;
-let isProcessing = false;
 let childProcess: ChildProcess | null = null;
+let lastGitCheck = 0;
 const startTime = new Date();
 
 function log(message: string): void {
@@ -55,12 +54,13 @@ function log(message: string): void {
 function logHeader(): void {
   console.log('');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('🚀 자동 업데이트 런처 시작');
+  console.log('🚀 자동 업데이트 런처 시작 (작업 감시 모드)');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log(`📍 호스트: ${os.hostname()}`);
   console.log(`📁 경로: ${PROJECT_ROOT}`);
-  console.log(`⏰ 순위 체크 주기: ${CHECK_INTERVAL_MS / 1000 / 60}분`);
-  console.log(`🔄 Git 체크 주기: ${GIT_CHECK_EVERY}회마다 (${(CHECK_INTERVAL_MS * GIT_CHECK_EVERY) / 1000 / 60}분)`);
+  console.log(`⏰ 작업 없을 때 대기: ${IDLE_WAIT_MS / 1000}초`);
+  console.log(`⚡ 배치 완료 후 쿨다운: ${BATCH_COOLDOWN_MS / 1000}초`);
+  console.log(`🔄 Git 체크 주기: ${GIT_CHECK_INTERVAL_MS / 1000 / 60}분`);
   console.log(`🌿 Git 브랜치: ${GIT_BRANCH}`);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('');
@@ -103,70 +103,91 @@ async function checkForUpdates(): Promise<boolean> {
 
 /**
  * 순위 체크 실행 (자식 프로세스)
+ * @returns 처리된 키워드 수 (0이면 작업 없음)
  */
-async function runRankCheck(): Promise<void> {
-  return new Promise((resolve, reject) => {
+async function runRankCheck(): Promise<number> {
+  return new Promise((resolve) => {
     log('🔍 순위 체크 시작...');
 
     const scriptPath = path.join(PROJECT_ROOT, 'rank-check', 'batch', 'check-batch-worker-pool.ts');
 
+    let output = '';
+
     // tsx로 스크립트 실행
     childProcess = spawn('npx', ['tsx', scriptPath], {
       cwd: PROJECT_ROOT,
-      stdio: 'inherit',
+      stdio: ['inherit', 'pipe', 'inherit'],
       shell: true,
+    });
+
+    // stdout에서 처리된 개수 파싱
+    childProcess.stdout?.on('data', (data: Buffer) => {
+      const text = data.toString();
+      process.stdout.write(text);
+      output += text;
     });
 
     childProcess.on('close', (code) => {
       childProcess = null;
+
+      // "총 처리: N개" 또는 "N개 키워드 할당" 패턴에서 개수 추출
+      let processedCount = 0;
+      const matchTotal = output.match(/총 처리:\s*(\d+)개/);
+      const matchAssign = output.match(/(\d+)개 키워드 할당/);
+      const matchNoWork = output.includes('처리할 키워드가 없습니다');
+
+      if (matchNoWork) {
+        processedCount = 0;
+      } else if (matchTotal) {
+        processedCount = parseInt(matchTotal[1], 10);
+      } else if (matchAssign) {
+        processedCount = parseInt(matchAssign[1], 10);
+      }
+
       if (code === 0) {
-        log('✅ 순위 체크 완료');
-        resolve();
+        log(`✅ 순위 체크 완료 (${processedCount}개 처리)`);
       } else {
         log(`⚠️ 순위 체크 종료 (코드: ${code})`);
-        resolve(); // 에러여도 계속 진행
       }
+
+      resolve(processedCount);
     });
 
     childProcess.on('error', (error) => {
       childProcess = null;
       log(`❌ 순위 체크 에러: ${error.message}`);
-      resolve(); // 에러여도 계속 진행
+      resolve(0);
     });
   });
 }
 
 /**
  * 메인 루프 1회 실행
+ * @returns 처리된 키워드 수
  */
-async function runOnce(): Promise<void> {
-  if (isProcessing) {
-    log('⏳ 이전 작업이 진행 중입니다. 건너뜁니다.');
-    return;
-  }
-
-  isProcessing = true;
+async function runOnce(): Promise<number> {
   runCount++;
 
-  try {
-    console.log('');
-    console.log(`━━━━━━━━━━ [${runCount}회차 실행] ━━━━━━━━━━`);
+  console.log('');
+  console.log(`━━━━━━━━━━ [${runCount}회차 실행] ━━━━━━━━━━`);
 
-    // Git 업데이트 체크 (N번마다)
-    if (runCount % GIT_CHECK_EVERY === 0) {
+  try {
+    // Git 업데이트 체크 (시간 기반)
+    const now = Date.now();
+    if (now - lastGitCheck >= GIT_CHECK_INTERVAL_MS) {
+      lastGitCheck = now;
       const updated = await checkForUpdates();
       if (updated) {
         log('🔄 코드 업데이트됨 - 변경사항이 다음 실행에 반영됩니다.');
-        // tsx는 매번 새로 로드하므로 별도 재시작 불필요
       }
     }
 
     // 순위 체크 실행
-    await runRankCheck();
+    const processedCount = await runRankCheck();
+    return processedCount;
   } catch (error: any) {
     log(`🚨 에러 발생: ${error.message}`);
-  } finally {
-    isProcessing = false;
+    return 0;
   }
 }
 
@@ -186,7 +207,6 @@ function printStats(): void {
   console.log(`시작 시간: ${startTime.toLocaleString('ko-KR')}`);
   console.log(`실행 시간: ${hours}시간 ${minutes}분 ${seconds}초`);
   console.log(`총 실행 횟수: ${runCount}회`);
-  console.log(`Git 체크 횟수: ${Math.floor(runCount / GIT_CHECK_EVERY)}회`);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('');
 }
@@ -212,22 +232,38 @@ function setupShutdownHandler(): void {
 }
 
 /**
- * 메인 함수
+ * 대기 함수
+ */
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * 메인 함수 - 작업 감시 루프
  */
 async function main(): Promise<void> {
   logHeader();
   setupShutdownHandler();
 
-  // 즉시 첫 실행
-  log('⏳ 첫 순위 체크 시작...');
-  await runOnce();
+  log('🔄 작업 감시 모드로 실행합니다. (Ctrl+C로 종료)');
+  log('   - 작업 있으면: 즉시 처리 → 5초 쿨다운 → 다음 배치');
+  log('   - 작업 없으면: 1분 대기 후 재확인');
+  console.log('');
 
-  // 이후 주기적 실행
-  log(`⏰ ${CHECK_INTERVAL_MS / 1000 / 60}분 간격으로 반복 실행합니다. (Ctrl+C로 종료)`);
+  // 무한 루프로 작업 감시
+  while (true) {
+    const processedCount = await runOnce();
 
-  setInterval(async () => {
-    await runOnce();
-  }, CHECK_INTERVAL_MS);
+    if (processedCount === 0) {
+      // 작업 없음 → 1분 대기 후 재확인
+      log(`⏳ 작업 없음. ${IDLE_WAIT_MS / 1000}초 후 재확인...`);
+      await delay(IDLE_WAIT_MS);
+    } else {
+      // 작업 있었음 → 짧은 쿨다운 후 즉시 다음 배치
+      log(`⚡ ${BATCH_COOLDOWN_MS / 1000}초 쿨다운 후 다음 배치 시작...`);
+      await delay(BATCH_COOLDOWN_MS);
+    }
+  }
 }
 
 main().catch((error) => {
