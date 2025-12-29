@@ -74,46 +74,6 @@ function parseArgs() {
   return { workers, limit };
 }
 
-// ✅ slot_naver에서 기존 MID 조회 (URL 기준, 청크 분할)
-async function getCachedMids(urls: string[]): Promise<Map<string, string>> {
-  const midMap = new Map<string, string>();
-
-  if (urls.length === 0) return midMap;
-
-  // URL을 50개씩 청크로 분할하여 조회 (요청 크기 제한 회피)
-  const CHUNK_SIZE = 50;
-  const chunks: string[][] = [];
-  for (let i = 0; i < urls.length; i += CHUNK_SIZE) {
-    chunks.push(urls.slice(i, i + CHUNK_SIZE));
-  }
-
-  for (const chunk of chunks) {
-    try {
-      const { data, error } = await supabase
-        .from('slot_naver')
-        .select('link_url, mid')
-        .in('link_url', chunk)
-        .not('mid', 'is', null);
-
-      if (error) {
-        console.warn(`⚠️ MID 캐시 조회 실패 (청크): ${error.message}`);
-        continue;
-      }
-
-      for (const row of data || []) {
-        if (row.mid) {
-          midMap.set(row.link_url, row.mid);
-        }
-      }
-    } catch (e: any) {
-      console.warn(`⚠️ MID 캐시 조회 네트워크 에러: ${e.message}`);
-    }
-  }
-
-  console.log(`📦 캐시된 MID: ${midMap.size}개 / ${urls.length}개`);
-  return midMap;
-}
-
 // 타임아웃된 작업 복구
 async function recoverStaleKeywords(): Promise<number> {
   const staleTime = new Date(Date.now() - STALE_TIMEOUT_MS).toISOString();
@@ -149,22 +109,32 @@ async function claimKeywords(claimLimit: number): Promise<any[]> {
   }
 
   // Fallback: pending 가져오기
-  const { data: pendingData } = await supabase
+  const { data: pendingData, error: pendingError } = await supabase
     .from('keywords_navershopping')
     .select('id, status')
     .eq('status', 'pending')
     .order('id', { ascending: false })
     .limit(claimLimit);
 
+  if (pendingError) {
+    console.error('   ❌ pending 조회 실패:', pendingError.message);
+  }
+
   // 24시간 지난 waiting 가져오기
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const { data: waitingData } = await supabase
+  const { data: waitingData, error: waitingError } = await supabase
     .from('keywords_navershopping')
     .select('id, status')
     .eq('status', 'waiting')
     .lt('started_at', twentyFourHoursAgo)
     .order('id', { ascending: false })
     .limit(claimLimit);
+
+  if (waitingError) {
+    console.error('   ❌ waiting 조회 실패:', waitingError.message);
+  }
+
+  console.log(`   📋 pending: ${pendingData?.length || 0}개, waiting(24h+): ${waitingData?.length || 0}개`);
 
   const allIds = [
     ...(pendingData || []).map(r => r.id),
@@ -174,8 +144,6 @@ async function claimKeywords(claimLimit: number): Promise<any[]> {
   if (allIds.length === 0) {
     return [];
   }
-
-  console.log(`   📋 pending: ${pendingData?.length || 0}개, waiting(24h+): ${waitingData?.length || 0}개`);
 
   const { data: claimed, error: updateError } = await supabase
     .from('keywords_navershopping')
@@ -275,16 +243,11 @@ async function main() {
 
   console.log(`✅ ${keywords.length}개 키워드 할당 완료\n`);
 
-  // ✅ slot_naver에서 기존 MID 조회
-  const urls = keywords.map((k) => k.link_url);
-  const cachedMidMap = await getCachedMids(urls);
-
-  // 요청 배열 생성 (cachedMid 포함)
+  // 요청 배열 생성 (ProductId 방식 - URL 직접 방문 없음)
   const requests = keywords.map((k) => ({
     url: k.link_url,
     keyword: k.keyword,
     maxPages: MAX_PAGES,
-    cachedMid: cachedMidMap.get(k.link_url), // ✅ 있으면 URL 방문 skip
   }));
 
   const startTime = Date.now();

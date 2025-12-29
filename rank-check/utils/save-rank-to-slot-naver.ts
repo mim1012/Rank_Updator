@@ -148,6 +148,10 @@ export async function saveRankToSlotNaver(
       }
     } else if (!isRankNotFound) {
       // ④ INSERT 신규 레코드 (실제 스키마에 맞춤)
+      // 기본 만료일: 30일 후
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 30);
+
       const { data: insertedData, error: insertError } = await supabase
         .from('slot_naver')
         .insert({
@@ -161,6 +165,7 @@ export async function saveRankToSlotNaver(
           start_rank: currentRank, // 최초 생성 시에만 기록 (불변)
           mid: mid, // ✅ MID 저장 (재사용 가능)
           product_name: productName, // 상품명 저장
+          expiry_date: expiryDate.toISOString().split('T')[0], // YYYY-MM-DD 형식
           created_at: now,
           updated_at: now,
         })
@@ -176,12 +181,12 @@ export async function saveRankToSlotNaver(
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 히스토리 테이블 INSERT (append-only)
+    // 히스토리 테이블 INSERT (append-only, 미발견(-1)도 기록)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     // slotRecord가 없으면 히스토리 저장 불가 (slot_status_id 필요)
     if (!slotRecord) {
-      console.log(`   ⚠️ slot_naver 레코드 없음 (순위권 밖) - 히스토리 저장 스킵`);
+      console.log(`   ⚠️ slot_naver 레코드 없음 - 히스토리 저장 스킵`);
       return {
         success: true,
         action: 'updated',
@@ -195,27 +200,27 @@ export async function saveRankToSlotNaver(
       return isNaN(num) ? null : num;
     };
 
-    // 순위 변화 계산 (이전 순위가 있으면 비교)
+    // 순위 변화 계산 (이전 순위가 있으면 비교, -1은 변화 계산 제외)
     const previousRank = toNumber(slotRecord.current_rank);
-    const startRank = toNumber(slotRecord.start_rank) ?? currentRank; // null이면 현재 순위 사용 (NOT NULL 제약조건)
+    const startRank = toNumber(slotRecord.start_rank) ?? (isRankNotFound ? null : currentRank);
     const rankChange =
-      previousRank !== null && currentRank !== -1 ? currentRank - previousRank : null;
+      previousRank !== null && !isRankNotFound ? currentRank - previousRank : null;
     const startRankDiff =
-      startRank !== null && currentRank !== -1 ? currentRank - startRank : null;
+      startRank !== null && !isRankNotFound ? currentRank - startRank : null;
 
-    // 히스토리 테이블에 저장 (항상 - -1은 이미 위에서 리턴됨)
+    // 히스토리 테이블에 저장 (미발견(-1)도 항상 기록)
     const { error: historyError } = await supabase
       .from('slot_rank_naver_history')
       .insert({
         slot_status_id: slotRecord.id, // slot_naver의 id 참조
         keyword: keyword.keyword,
         link_url: keyword.link_url,
-        current_rank: currentRank,
-        start_rank: startRank, // 불변값 참조 (정규화됨, null이면 currentRank 사용)
+        current_rank: currentRank, // -1도 기록됨
+        start_rank: startRank ?? 0, // NOT NULL 제약조건 대응
         previous_rank: previousRank, // 직전 순위 (정규화됨)
-        rank_change: rankChange, // 순위 변화량 (양수=하락, 음수=상승)
+        rank_change: rankChange, // 순위 변화량 (양수=하락, 음수=상승), -1일 때 null
         rank_diff: rankChange, // rank_change와 동일
-        start_rank_diff: startRankDiff, // 시작 순위 대비 변화
+        start_rank_diff: startRankDiff, // 시작 순위 대비 변화, -1일 때 null
         slot_sequence: toNumber(keyword.slot_sequence), // 정규화
         slot_type: keyword.slot_type || '네이버쇼핑',
         customer_id: keyword.customer_id || 'master',
@@ -227,7 +232,8 @@ export async function saveRankToSlotNaver(
       // 히스토리 저장 실패는 경고만 (메인 데이터는 이미 저장됨)
       console.warn(`   ⚠️ 히스토리 저장 실패: ${historyError.message}`);
     } else {
-      console.log(`   📊 히스토리 추가 완료`);
+      const rankDisplay = isRankNotFound ? '미발견(-1)' : currentRank;
+      console.log(`   📊 히스토리 추가 완료 (순위: ${rankDisplay})`);
     }
 
     return {
