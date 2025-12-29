@@ -97,54 +97,30 @@ async function recoverStaleKeywords(): Promise<number> {
   return data?.length || 0;
 }
 
-// 작업 할당 (pending + 24시간 지난 waiting)
+// 작업 할당 (pending만 가져와서 processing으로 변경 후 반환)
 async function claimKeywords(claimLimit: number): Promise<any[]> {
-  const { data: rpcData, error: rpcError } = await supabase.rpc('claim_keywords', {
-    p_worker_id: WORKER_ID,
-    p_limit: claimLimit,
-  });
-
-  if (!rpcError && rpcData) {
-    return rpcData;
-  }
-
-  // Fallback: pending 가져오기
+  // 1. pending 상태인 레코드 ID만 먼저 조회
   const { data: pendingData, error: pendingError } = await supabase
     .from('keywords_navershopping')
-    .select('id, status')
+    .select('id')
     .eq('status', 'pending')
-    .order('id', { ascending: false })
+    .order('id', { ascending: true })
     .limit(claimLimit);
 
   if (pendingError) {
     console.error('   ❌ pending 조회 실패:', pendingError.message);
-  }
-
-  // 24시간 지난 waiting 가져오기
-  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const { data: waitingData, error: waitingError } = await supabase
-    .from('keywords_navershopping')
-    .select('id, status')
-    .eq('status', 'waiting')
-    .lt('started_at', twentyFourHoursAgo)
-    .order('id', { ascending: false })
-    .limit(claimLimit);
-
-  if (waitingError) {
-    console.error('   ❌ waiting 조회 실패:', waitingError.message);
-  }
-
-  console.log(`   📋 pending: ${pendingData?.length || 0}개, waiting(24h+): ${waitingData?.length || 0}개`);
-
-  const allIds = [
-    ...(pendingData || []).map(r => r.id),
-    ...(waitingData || []).map(r => r.id),
-  ].slice(0, claimLimit);
-
-  if (allIds.length === 0) {
     return [];
   }
 
+  if (!pendingData || pendingData.length === 0) {
+    console.log('   📋 pending: 0개');
+    return [];
+  }
+
+  const pendingIds = pendingData.map(r => r.id);
+  console.log(`   📋 pending: ${pendingIds.length}개 발견`);
+
+  // 2. 해당 ID들만 processing으로 업데이트하고 전체 데이터 반환
   const { data: claimed, error: updateError } = await supabase
     .from('keywords_navershopping')
     .update({
@@ -152,15 +128,16 @@ async function claimKeywords(claimLimit: number): Promise<any[]> {
       worker_id: WORKER_ID,
       started_at: new Date().toISOString(),
     })
-    .in('id', allIds)
-    .in('status', ['pending', 'waiting'])
-    .select();
+    .in('id', pendingIds)
+    .eq('status', 'pending')  // 다른 워커가 이미 가져간 경우 방지
+    .select('*');
 
   if (updateError) {
     console.error('❌ 작업 할당 실패:', updateError.message);
     return [];
   }
 
+  console.log(`   ✅ ${claimed?.length || 0}개 작업 할당 완료`);
   return claimed || [];
 }
 
