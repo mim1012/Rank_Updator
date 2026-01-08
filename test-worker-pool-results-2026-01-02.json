@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-01-02T05:59:18.406Z",
+  "config": {
+    "workers": 4,
+    "maxPages": 15
+  },
+  "summary": {
+    "total": 18,
+    "success": 0,
+    "notFound": 17,
+    "blocked": 0,
+    "failed": 1,
+    "duration": 1362496
+  }
+}

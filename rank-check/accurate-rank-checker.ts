@@ -239,7 +239,7 @@ export async function findAccurateRank(
   return null;
 }
 
-async function enterShoppingTab(page: Page, keyword: string): Promise<boolean> {
+export async function enterShoppingTab(page: Page, keyword: string): Promise<boolean> {
   console.log("🧭 네이버 메인 진입");
   try {
     await page.goto("https://www.naver.com/", {
@@ -298,6 +298,7 @@ async function enterShoppingTab(page: Page, keyword: string): Promise<boolean> {
 
   if (!page.url().includes("search.shopping.naver.com")) {
     console.log("⚠️ 쇼핑탭 URL이 확인되지 않았습니다.");
+    console.log(`   현재 URL: ${page.url()}`);
     return false;
   }
 
@@ -309,30 +310,35 @@ async function enterShoppingTab(page: Page, keyword: string): Promise<boolean> {
   return true;
 }
 
-async function hydrateCurrentPage(page: Page): Promise<void> {
+export async function hydrateCurrentPage(page: Page): Promise<void> {
   await page.evaluate(() => window.scrollTo(0, 0));
   // ★ 자연스러운 스크롤 패턴 적용 (봇 탐지 회피)
   await humanScroll(page, SCROLL_STEPS * 550);
   await delay(600);
 }
 
-async function collectProductsOnPage(page: Page, pageNumber: number): Promise<PageScanResult> {
+export async function collectProductsOnPage(page: Page, pageNumber: number): Promise<PageScanResult> {
   const result = await page.$$eval(
-    'a[data-shp-contents-id][data-shp-contents-rank]',
+    'a[data-shp-contents-id][data-shp-contents-rank][data-shp-contents-type]',
     (anchors, pageNum) => {
       const seen = new Set();
       const products = [];
 
       for (const anchor of anchors) {
-        const mid = anchor.getAttribute("data-shp-contents-id");
+        // ✅ 상품만 필터링 (UI 요소 제외)
+        const contentsType = anchor.getAttribute("data-shp-contents-type");
+        if (!contentsType || (!contentsType.includes("prod") && !contentsType.includes("catalog"))) {
+          continue;
+        }
+
+        let mid = anchor.getAttribute("data-shp-contents-id");
         const rankAttr = anchor.getAttribute("data-shp-contents-rank");
         if (!mid || !rankAttr) continue;
 
         const totalRank = parseInt(rankAttr, 10);
-        if (!Number.isFinite(totalRank)) continue;
-        if (seen.has(mid)) continue;
+        if (!Number.isFinite(totalRank) || totalRank <= 0) continue;
 
-        // Extract organic rank
+        // ✅ 광고 상품인 경우, data-shp-contents-dtl에서 nv_mid 추출
         let organicRank = -1;
         const dtl = anchor.getAttribute("data-shp-contents-dtl");
         if (dtl) {
@@ -340,6 +346,22 @@ async function collectProductsOnPage(page: Page, pageNumber: number): Promise<Pa
             const normalized = dtl.replace(/&quot;/g, '"');
             const parsed = JSON.parse(normalized);
             if (Array.isArray(parsed)) {
+              // nv_mid 추출 (광고 상품용)
+              if (mid.startsWith('nad-')) {
+                const nvMidItem = parsed.find((item) => item && item.key === "nv_mid");
+                if (nvMidItem && nvMidItem.value) {
+                  let nvMid = String(nvMidItem.value);
+                  // ✅ 숫자만 추출 (예: pmax-84701627018 → 84701627018)
+                  const numMatch = nvMid.match(/\d{10,}/);
+                  if (numMatch) {
+                    mid = numMatch[0];
+                  } else {
+                    mid = nvMid; // fallback
+                  }
+                }
+              }
+
+              // organic rank 추출
               const organic = parsed.find((item) => item && item.key === "organic_expose_order");
               if (organic) {
                 const val = parseInt(String(organic.value), 10);
@@ -352,6 +374,8 @@ async function collectProductsOnPage(page: Page, pageNumber: number): Promise<Pa
             // ignore
           }
         }
+
+        if (seen.has(mid)) continue;
 
         // Extract product name - 부모 상품 카드에서 찾기
         let productName = "상품명 없음";
@@ -524,7 +548,7 @@ async function goToPage(page: Page, targetPage: number, keyword: string): Promis
 // 특수 반환값: 차단 감지 시
 const BLOCKED_SIGNAL = 'BLOCKED' as const;
 
-async function goToPageAndGetAPIData(page: Page, targetPage: number): Promise<ProductEntry[] | null | typeof BLOCKED_SIGNAL> {
+export async function goToPageAndGetAPIData(page: Page, targetPage: number): Promise<ProductEntry[] | null | typeof BLOCKED_SIGNAL> {
   // ★ 페이지네이션 영역이 로드될 때까지 대기 (최대 10초)
   const paginationSelector = 'a.pagination_btn_page__utqBz, a[class*="pagination_btn"]';
 
@@ -634,9 +658,37 @@ async function goToPageAndGetAPIData(page: Page, targetPage: number): Promise<Pr
     console.log(`   ⚠️ API 응답 타임아웃 또는 파싱 실패: ${error}`);
     console.log(`   🔄 DOM 방식으로 재시도 중...`);
 
-    // Fallback: DOM 기반 수집
-    await delay(3000); // DOM 렌더링 대기
+    // Fallback: 페이지 이동 대기 후 DOM 기반 수집
+    await delay(5000); // 페이지 전환 대기
+
+    // ★ 페이지네이션 영역까지 스크롤 (버튼이 보이도록)
+    await page.evaluate(() => {
+      const pagination = document.querySelector('div.pagination_pagination__JUkfD, div[class*="pagination"]');
+      if (pagination) {
+        pagination.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+    await delay(1000);
+
+    // ★ 현재 URL의 pagingIndex 확인
+    const currentUrl = page.url();
+    const currentPageIndex = currentUrl.match(/pagingIndex=(\d+)/)?.[1];
+    console.log(`   📍 현재 URL pagingIndex: ${currentPageIndex || '없음'}`);
+
+    // ★ 페이지 이동이 안 됐으면 URL 직접 변경
+    if (currentPageIndex !== String(targetPage)) {
+      console.log(`   🔄 URL 직접 변경으로 ${targetPage}페이지 이동...`);
+      const newUrl = currentUrl.includes('pagingIndex=')
+        ? currentUrl.replace(/pagingIndex=\d+/, `pagingIndex=${targetPage}`)
+        : currentUrl + (currentUrl.includes('?') ? '&' : '?') + `pagingIndex=${targetPage}`;
+
+      await page.goto(newUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await delay(5000);
+    }
+
+    // 스크롤하여 모든 상품 로드
     await hydrateCurrentPage(page);
+    await delay(2000);
 
     const fallbackResult = await collectProductsOnPage(page, targetPage);
     if (fallbackResult.products.length > 0) {
@@ -649,7 +701,7 @@ async function goToPageAndGetAPIData(page: Page, targetPage: number): Promise<Pr
   }
 }
 
-async function isBlocked(page: Page): Promise<boolean> {
+export async function isBlocked(page: Page): Promise<boolean> {
   return page.evaluate(() => {
     const bodyText = document.body?.innerText ?? "";
     return (

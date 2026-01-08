@@ -1,0 +1,100 @@
+# Workflow Status Template
+
+# This tracks progress through BMM methodology Analysis, Planning, and Solutioning phases.
+# Implementation phase is tracked separately in sprint-status.yaml
+
+# STATUS DEFINITIONS:
+# ==================
+# Initial Status (before completion):
+#   - required: Must be completed to progress
+#   - optional: Can be completed but not required
+#   - recommended: Strongly suggested but not required
+#   - conditional: Required only if certain conditions met (e.g., if_has_ui)
+#
+# Completion Status:
+#   - {file-path}: File created/found (e.g., "docs/product-brief.md")
+#   - skipped: Optional/conditional workflow that was skipped
+
+generated: "2026-01-02"
+project: "Rank_Updator"
+project_type: "brownfield"
+selected_track: "method"
+field_type: "brownfield"
+workflow_path: "_bmad/bmm/workflows/workflow-status/paths/method-brownfield.yaml"
+
+workflow_status:
+  # Phase 0: Documentation (Prerequisite for undocumented brownfield)
+  phase_0_documentation:
+    document-project:
+      status: "docs/index.md"
+      note: "Completed - Focused on rank-check module for auto-agent implementation"
+      agent: "analyst"
+      command: "/bmad:bmm:workflows:document-project"
+      output: "docs/index.md, rank-check-module-architecture.md, test-product-collection-implementation-guide.md"
+      completed_at: "2026-01-02"
+
+  # Phase 1: Analysis (Optional Discovery)
+  phase_1_analysis:
+    brainstorm-project:
+      status: "optional"
+      note: "User selected - creative exploration for new features"
+      agent: "analyst"
+      command: "/bmad:core:workflows:brainstorming"
+
+    research:
+      status: "optional"
+      note: "User selected - domain/technical analysis"
+      agent: "analyst"
+      command: "/bmad:bmm:workflows:research"
+
+  # Phase 2: Planning (Required)
+  phase_2_planning:
+    prd:
+      status: "required"
+      note: "Product Requirements Document with FRs and NFRs"
+      agent: "pm"
+      command: "/bmad:bmm:workflows:create-prd"
+
+    create-ux-design:
+      status: "conditional"
+      note: "Required if PRD includes UI changes - determine after PRD"
+      agent: "ux-designer"
+      command: "/bmad:bmm:workflows:create-ux-design"
+
+  # Phase 3: Solutioning (Required)
+  phase_3_solutioning:
+    create-architecture:
+      status: "required"
+      note: "System architecture and technical decisions"
+      agent: "architect"
+      command: "/bmad:bmm:workflows:create-architecture"
+
+    create-epics-and-stories:
+      status: "required"
+      note: "Break down PRD into epics and implementable stories"
+      agent: "pm"
+      command: "/bmad:bmm:workflows:create-epics-and-stories"
+
+    test-design:
+      status: "optional"
+      note: "System-level testability review (recommended)"
+      agent: "tea"
+      command: "/bmad:bmm:workflows:testarch-test-design"
+
+    implementation-readiness:
+      status: "required"
+      note: "Gate check - validates PRD + Architecture + Epics before implementation"
+      agent: "architect"
+      command: "/bmad:bmm:workflows:check-implementation-readiness"
+
+  # Phase 4: Implementation
+  phase_4_implementation:
+    sprint-planning:
+      status: "required"
+      note: "Creates sprint-status.yaml - subsequent work tracked there"
+      agent: "sm"
+      command: "/bmad:bmm:workflows:sprint-planning"
+
+# Next Steps
+next_workflow: "document-project (optional) or brainstorm-project (optional) or prd (start planning)"
+next_agent: "analyst (for discovery) or pm (for PRD)"

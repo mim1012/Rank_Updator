@@ -1,9 +1,41 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node -e:*)"
+      "Bash(git -C \"D:\\Project\\Rank_Updator\" show HEAD:rank-check/test/check-memo-items.ts)",
+      "Bash(git -C \"D:\\Project\\Rank_Updator\" show origin/main:rank-check/test/check-memo-items.ts)",
+      "Bash(git -C \"D:\\Project\\Rank_Updator\" show HEAD:rank-check/test/insert-memo-keywords.ts)",
+      "Bash(git -C \"D:\\Project\\Rank_Updator\" log --oneline -20)",
+      "Bash(git -C \"D:\\Project\\Rank_Updator\" show HEAD:rank-check/test/check-batch-worker-pool-test.ts)",
+      "Bash(git -C \"D:\\Project\\Rank_Updator\" show HEAD:rank-check/test/save-rank-to-slot-naver-test.ts)",
+      "Bash(npx tsx:*)",
+      "Bash(npx bmad-method@alpha install)",
+      "SlashCommand(/bmad:bmm:workflows:workflow-init)",
+      "Bash(mkdir:*)",
+      "Bash(ls:*)",
+      "Bash(test:*)",
+      "Bash(git -C \"D:\\Project\\Rank_Updator\" show HEAD:rank-check/single/check-rank-by-url.ts)",
+      "Bash(git -C \"D:\\Project\\Rank_Updator\" show HEAD:rank-check/utils/getCatalogMidFromUrl.ts)",
+      "Bash(taskkill:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(powershell -Command \"Stop-Process -Name chrome -Force\")",
+      "Bash(nordvpn:*)",
+      "Bash(chmod:*)",
+      "Bash(git -C \"D:\\Project\\Rank_Updator\" show HEAD:rank-check/parallel/parallel-rank-checker.ts)",
+      "Bash(git -C \"D:\\Project\\Rank_Updator\" show HEAD:rank-check/test/collect-test-products-by-range.ts)",
+      "Bash(npx supabase:*)",
+      "Bash(timeout 90 npx tsx:*)",
+      "Bash(git -C \"D:\\Project\\Rank_Updator\" status)",
+      "Bash(git -C \"D:\\Project\\Rank_Updator\" diff --stat)",
+      "Bash(git -C \"D:\\Project\\Rank_Updator\" log --oneline -5)",
+      "Bash(git -C \"D:\\Project\\Rank_Updator\" add -A)",
+      "Bash(git -C \"D:\\Project\\Rank_Updator\" commit -m \"$(cat <<''EOF''\nrefactor: 레거시 코드 정리 및 프로젝트 구조 개선\n\n- 사용하지 않는 레거시 파일 100+ 개 삭제\n  - rank-check/batch/, single/, legacy/, traffic-based/ 폴더 정리\n  - 루트의 테스트 스크립트들 (test-*.ts) 삭제\n  - 중복된 예제/유틸리티 파일 제거\n\n- 새 테스트 인프라 추가\n  - rank-check/test/ 에 키보드/navertest 테스트 스크립트\n  - slot_navertest 전체 상품 순위 체크 자동화\n\n- Claude Code 설정 추가\n  - .claude/commands/ 슬래시 커맨드 (memo-check, navertest-check)\n  - .claude/skills/ 스킬 (memo-rank-checker, navertest-rank-checker)\n  - BMAD 워크플로우 통합\n\n- 문서 업데이트\n  - docs/ 개발자 가이드, 런북, 테스트 문서 추가\n  - README.md 간소화\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "agentvibes"
+  ]
 }

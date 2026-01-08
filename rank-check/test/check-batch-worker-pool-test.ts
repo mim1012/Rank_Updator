@@ -91,17 +91,17 @@ async function getCachedMids(urls: string[]): Promise<Map<string, string>> {
   return midMap;
 }
 
-// 작업 할당 (last_check_date 기준)
+// 작업 할당 (current_rank가 null인 것 = 아직 체크 안 된 것)
 async function claimKeywords(claimLimit: number): Promise<any[]> {
-  // 아직 체크하지 않은 것 (last_check_date가 created_at과 같거나 오래된 것)
-  // 또는 24시간 이상 지난 것
+  // current_rank가 null인 것 (새로 추가된 것)
+  // 또는 last_check_date가 24시간 이상 지난 것 (재체크 대상)
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
   const { data, error } = await supabase
     .from('keywords_navershopping-test')
     .select('*')
-    .or(`last_check_date.is.null,last_check_date.lt.${twentyFourHoursAgo}`)
-    .order('last_check_date', { ascending: true, nullsFirst: true })
+    .or(`current_rank.is.null,last_check_date.lt.${twentyFourHoursAgo}`)
+    .order('id', { ascending: true })
     .limit(claimLimit);
 
   if (error) {

@@ -151,12 +151,20 @@ export async function getCatalogMidFromUrl(
       return { mid: catalogMid, captchaFailed };
     }
 
-    // 대체 방법 1: URL에서 리다이렉트된 catalog MID 확인
+    // 대체 방법 1: URL에서 리다이렉트된 catalog/product MID 확인
     const currentUrl = page.url();
     if (currentUrl.includes("/catalog/")) {
       const match = currentUrl.match(/\/catalog\/(\d+)/);
       if (match) {
-        console.log(`✅ 리다이렉트 URL에서 MID 추출: ${match[1]}`);
+        console.log(`✅ 리다이렉트 URL에서 MID 추출 (catalog): ${match[1]}`);
+        return { mid: match[1], captchaFailed };
+      }
+    }
+    // /product/숫자 패턴도 체크
+    if (currentUrl.includes("/product/")) {
+      const match = currentUrl.match(/\/product\/(\d+)/);
+      if (match) {
+        console.log(`✅ URL에서 MID 추출 (product): ${match[1]}`);
         return { mid: match[1], captchaFailed };
       }
     }

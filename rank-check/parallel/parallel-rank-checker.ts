@@ -13,6 +13,7 @@
 import { connect } from 'puppeteer-real-browser';
 import { type RankResult } from '../accurate-rank-checker';
 import { humanScroll, humanType } from '../utils/humanBehavior';
+import { getCatalogMidFromUrl } from '../utils/getCatalogMidFromUrl';
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
@@ -160,8 +161,8 @@ async function findRankByProductIdOnPage(page: any, targetProductId: string): Pr
     const anchors = document.querySelectorAll('a[data-shp-contents-id][data-shp-contents-rank][data-shp-contents-dtl]');
 
     for (const anchor of anchors) {
-      const mid = anchor.getAttribute('data-shp-contents-id');
-      if (!mid || !/^\d{10,}$/.test(mid)) continue;
+      let mid = anchor.getAttribute('data-shp-contents-id');
+      if (!mid) continue;
 
       const dtl = anchor.getAttribute('data-shp-contents-dtl');
       const rankStr = anchor.getAttribute('data-shp-contents-rank');
@@ -185,6 +186,12 @@ async function findRankByProductIdOnPage(page: any, targetProductId: string): Pr
           }
           if (item.key === 'catalog_nv_mid' && item.value) {
             catalogNvMid = String(item.value);
+          }
+          if (item.key === 'nv_mid' && item.value) {
+            // ✅ 광고 상품: nv_mid 추출
+            if (mid.startsWith('nad-')) {
+              catalogNvMid = String(item.value);
+            }
           }
           if (item.key === 'prod_nm' && item.value) {
             prodName = String(item.value).substring(0, 60);
@@ -440,11 +447,41 @@ export class ParallelRankChecker {
       } catch {}
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // ✅ ProductId 방식만 사용 (URL 직접 방문 제거)
+      // MID 추출: ProductId 방식 우선, 실패 시 Catalog 방식
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      const productId = extractProductIdFromUrl(request.url);
+      let productId = extractProductIdFromUrl(request.url);
+      let mid: string | null = null;
+      let midSource: 'direct' | 'catalog' | 'failed' = 'failed';
 
-      if (!productId) {
+      if (productId) {
+        console.log(`${logPrefix} 🚀 ProductId 방식: ${productId}`);
+        mid = productId;
+        midSource = 'direct';
+      } else {
+        // catalog/product URL인 경우 브라우저로 방문하여 MID 추출
+        console.log(`${logPrefix} 📦 Catalog URL 감지, MID 추출 시도...`);
+        const catalogResult = await getCatalogMidFromUrl(page, request.url);
+
+        if (catalogResult.mid) {
+          mid = catalogResult.mid;
+          midSource = 'catalog';
+          console.log(`${logPrefix} ✅ Catalog MID 추출: ${mid}`);
+        } else {
+          await browser.close();
+          return {
+            url: request.url,
+            keyword: request.keyword,
+            productName: request.productName,
+            mid: null,
+            midSource: 'failed',
+            rank: null,
+            duration: Date.now() - startTime,
+            error: 'MID 추출 실패',
+          };
+        }
+      }
+
+      if (!mid) {
         await browser.close();
         return {
           url: request.url,
@@ -454,13 +491,11 @@ export class ParallelRankChecker {
           midSource: 'failed',
           rank: null,
           duration: Date.now() - startTime,
-          error: 'productId 추출 실패 (URL에 /products/숫자 없음)',
+          error: 'MID 추출 실패',
         };
       }
 
-      console.log(`${logPrefix} 🚀 ProductId 방식: ${productId}`);
-
-      const result = await checkRankByProductId(page, request.keyword, productId, logPrefix);
+      const result = await checkRankByProductId(page, request.keyword, mid, logPrefix);
 
       await browser.close();
 
@@ -477,7 +512,7 @@ export class ParallelRankChecker {
       // RankResult 형식으로 변환
       const rankResult: RankResult | null = result.rank ? {
         found: true,
-        mid: result.catalogNvMid || productId,
+        mid: result.catalogNvMid || mid,
         productName: result.productName || request.productName || '',
         totalRank: result.rank,
         organicRank: result.isAd ? -1 : result.rank,
@@ -491,8 +526,8 @@ export class ParallelRankChecker {
         url: request.url,
         keyword: request.keyword,
         productName: result.productName || request.productName,
-        mid: result.catalogNvMid || productId,
-        midSource: result.catalogNvMid ? 'catalog' : 'direct',
+        mid: result.catalogNvMid || mid,
+        midSource: result.catalogNvMid ? 'catalog' : midSource,
         rank: rankResult,
         duration,
         blocked: result.blocked,
