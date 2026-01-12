@@ -1,6 +1,7 @@
 // Page 타입: Puppeteer/Playwright 모두 호환 (any 사용)
 type Page = any;
 import { humanScroll, humanType } from "./utils/humanBehavior";
+import { extractProductInfo } from "./utils/extractProductInfo";
 
 export interface RankResult {
   found: boolean;
@@ -12,6 +13,14 @@ export interface RankResult {
   page: number;
   pagePosition: number;
   blocked?: boolean;  // 차단 감지 여부
+  // ✅ 상품 정보 추가 (naver_rank - 1 통합)
+  keyword_name?: string | null;
+  price?: number | null;
+  price_sale?: number | null;
+  review_count?: number | null;
+  product_image_url?: string | null;
+  star_count?: number | null;
+  month_count?: number | null;
 }
 
 interface ProductEntry {
@@ -99,6 +108,10 @@ export async function findAccurateRank(
     console.log(
       `✅ 순위 발견: 전체 ${match.totalRank}위 / 오가닉 ${match.organicRank > 0 ? match.organicRank : "-"}`
     );
+
+    // ✅ 상품 정보 추출
+    const productInfo = await extractProductInfo(page, match.mid, '   ');
+
     return {
       found: true,
       mid: match.mid,
@@ -108,6 +121,7 @@ export async function findAccurateRank(
       isAd: match.isAd,
       page: 1,
       pagePosition: match.pagePosition,
+      ...productInfo,  // 7개 필드 확산
     };
   }
 
@@ -220,6 +234,10 @@ export async function findAccurateRank(
       console.log(
         `✅ 순위 발견: 전체 ${match.totalRank}위 / 오가닉 ${match.organicRank > 0 ? match.organicRank : "-"}`
       );
+
+      // ✅ 상품 정보 추출
+      const productInfo = await extractProductInfo(page, match.mid, '   ');
+
       return {
         found: true,
         mid: match.mid,
@@ -229,6 +247,7 @@ export async function findAccurateRank(
         isAd: match.isAd,
         page: currentPage,
         pagePosition: match.pagePosition,
+        ...productInfo,  // 7개 필드 확산
       };
     }
 
@@ -431,9 +450,23 @@ export async function collectProductsOnPage(page: Page, pageNumber: number): Pro
         const inventory = anchor.getAttribute("data-shp-inventory") || "";
         const isAd = /lst\*(A|P|D)/.test(inventory);
 
+        // ✅ 실제 상품 URL 추출 (smartstore/brand URL 우선)
+        let productUrl = `https://search.shopping.naver.com/catalog/${mid}`;
+        const href = anchor.getAttribute("href");
+        if (href) {
+          // smartstore.naver.com 또는 brand.naver.com 링크 추출
+          if (href.includes('smartstore.naver.com') || href.includes('brand.naver.com')) {
+            productUrl = href.startsWith('http') ? href : `https://search.shopping.naver.com${href}`;
+          } else if (href.includes('/products/')) {
+            // 상대 경로인 경우 절대 경로로 변환
+            productUrl = href.startsWith('http') ? href : `https://search.shopping.naver.com${href}`;
+          }
+        }
+
         products.push({
           mid: mid,
           productName: productName,
+          productUrl: productUrl,  // ✅ URL 추가
           totalRank: totalRank,
           organicRank: organicRank >= 0 ? organicRank : -1,
           isAd: isAd,
@@ -637,12 +670,26 @@ export async function goToPageAndGetAPIData(page: Page, targetPage: number): Pro
       const totalRank = p.rank || (targetPage - 1) * 40 + i + 1;
       const organicRank = p.rankInfo?.organicRank || -1;
       const productName = p.productTitle || p.title || "상품명 없음";
-      const isAd = p.adcrType !== undefined && p.adcrType !== null;
+
+      // ✅ URL 추출 (smartstore/brand URL 우선)
+      let productUrl = `https://search.shopping.naver.com/catalog/${mid}`;
+      if (p.productUrl) {
+        productUrl = p.productUrl;
+      } else if (p.mallProductUrl) {
+        productUrl = p.mallProductUrl;
+      } else if (p.crUrl) {
+        productUrl = p.crUrl;
+      }
+
+      // ✅ 광고 감지 (adcrType 필드 또는 URL 기반)
+      const isAd = (p.adcrType !== undefined && p.adcrType !== null) ||
+                   (productUrl && productUrl.includes('/adcr'));
 
       if (mid) {
         products.push({
           mid,
           productName,
+          productUrl,  // ✅ URL 추가
           totalRank,
           organicRank: organicRank > 0 ? organicRank : totalRank,
           isAd,

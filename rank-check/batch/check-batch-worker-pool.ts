@@ -57,6 +57,9 @@ let failedCount = 0;
 let notFoundCount = 0;
 let blockedCount = 0;
 let consecutiveBlocked = 0;
+// ✅ 상품 정보 추출 통계
+let productInfoSuccessCount = 0;
+let productInfoFailedCount = 0;
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -169,7 +172,19 @@ async function processResult(
 
   // 순위 발견 → 저장
   if (result.rank && result.rank.totalRank > 0) {
-    console.log(`   ✅ 순위: ${result.rank.totalRank}위 (${result.rank.isAd ? '광고' : '오가닉'})`);
+    // ✅ 상품 정보 추출 여부 확인
+    const hasProductInfo =
+      result.rank.price !== null ||
+      result.rank.review_count !== null ||
+      result.rank.keyword_name !== null;
+
+    if (hasProductInfo) {
+      productInfoSuccessCount++;
+      console.log(`   ✅ 순위: ${result.rank.totalRank}위 | 💰${result.rank.price || 'N/A'}원 | ⭐${result.rank.review_count || 0}개`);
+    } else {
+      productInfoFailedCount++;
+      console.log(`   ✅ 순위: ${result.rank.totalRank}위 | ⚠️ 상품정보 미추출`);
+    }
     successCount++;
 
     const saveResult = await saveRankToSlotNaver(supabase, keywordRecord, result.rank);
@@ -266,6 +281,16 @@ async function main() {
   console.log(`❌ 미발견: ${notFoundCount}개`);
   console.log(`🛑 차단: ${blockedCount}개`);
   console.log(`🚨 실패: ${failedCount}개`);
+
+  // ✅ 상품 정보 추출 통계
+  console.log(`\n📊 상품 정보 추출:`);
+  console.log(`   ✅ 성공: ${productInfoSuccessCount}개`);
+  console.log(`   ⚠️ 실패: ${productInfoFailedCount}개`);
+  if (successCount > 0) {
+    const successRate = Math.round((productInfoSuccessCount / successCount) * 100);
+    console.log(`   📈 성공률: ${successRate}%`);
+  }
+
   console.log(`\n⏱️ 총 소요: ${Math.round(totalDuration / 1000)}초 (${Math.round(totalDuration / 60000)}분)`);
   console.log(`⚡ 처리 속도: ${Math.round((keywords.length / totalDuration) * 60000)}개/분\n`);
 

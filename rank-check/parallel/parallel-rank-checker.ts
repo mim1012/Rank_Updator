@@ -14,6 +14,7 @@ import { connect } from 'puppeteer-real-browser';
 import { type RankResult } from '../accurate-rank-checker';
 import { humanScroll, humanType } from '../utils/humanBehavior';
 import { getCatalogMidFromUrl } from '../utils/getCatalogMidFromUrl';
+import { extractProductInfo, type ProductInfo } from '../utils/extractProductInfo';
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
@@ -382,6 +383,7 @@ export interface ParallelRankRequest {
   keyword: string;
   productName?: string;
   maxPages?: number;
+  cachedMid?: string;  // DB에 저장된 MID (있으면 URL 방문 skip)
 }
 
 export interface ParallelRankResult {
@@ -389,7 +391,7 @@ export interface ParallelRankResult {
   keyword: string;
   productName?: string;
   mid: string | null;
-  midSource: 'direct' | 'catalog' | 'failed';
+  midSource: 'direct' | 'catalog' | 'cached' | 'failed';
   rank: RankResult | null;
   duration: number;
   error?: string;
@@ -447,37 +449,46 @@ export class ParallelRankChecker {
       } catch {}
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // MID 추출: ProductId 방식 우선, 실패 시 Catalog 방식
+      // MID 추출: cachedMid 우선 → ProductId → Catalog 방식
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      let productId = extractProductIdFromUrl(request.url);
       let mid: string | null = null;
-      let midSource: 'direct' | 'catalog' | 'failed' = 'failed';
+      let midSource: 'direct' | 'catalog' | 'cached' | 'failed' = 'failed';
 
-      if (productId) {
-        console.log(`${logPrefix} 🚀 ProductId 방식: ${productId}`);
-        mid = productId;
-        midSource = 'direct';
-      } else {
-        // catalog/product URL인 경우 브라우저로 방문하여 MID 추출
-        console.log(`${logPrefix} 📦 Catalog URL 감지, MID 추출 시도...`);
-        const catalogResult = await getCatalogMidFromUrl(page, request.url);
-
-        if (catalogResult.mid) {
-          mid = catalogResult.mid;
-          midSource = 'catalog';
-          console.log(`${logPrefix} ✅ Catalog MID 추출: ${mid}`);
+      // ① cachedMid가 있으면 URL 방문 skip (가장 효율적)
+      if (request.cachedMid) {
+        console.log(`${logPrefix} ⚡ 캐시된 MID 사용: ${request.cachedMid}`);
+        mid = request.cachedMid;
+        midSource = 'cached';
+      }
+      // ② URL에서 productId 추출 시도
+      else {
+        const productId = extractProductIdFromUrl(request.url);
+        if (productId) {
+          console.log(`${logPrefix} 🚀 ProductId 방식: ${productId}`);
+          mid = productId;
+          midSource = 'direct';
         } else {
-          await browser.close();
-          return {
-            url: request.url,
-            keyword: request.keyword,
-            productName: request.productName,
-            mid: null,
-            midSource: 'failed',
-            rank: null,
-            duration: Date.now() - startTime,
-            error: 'MID 추출 실패',
-          };
+          // ③ catalog/product URL인 경우 브라우저로 방문하여 MID 추출
+          console.log(`${logPrefix} 📦 Catalog URL 감지, MID 추출 시도...`);
+          const catalogResult = await getCatalogMidFromUrl(page, request.url);
+
+          if (catalogResult.mid) {
+            mid = catalogResult.mid;
+            midSource = 'catalog';
+            console.log(`${logPrefix} ✅ Catalog MID 추출: ${mid}`);
+          } else {
+            await browser.close();
+            return {
+              url: request.url,
+              keyword: request.keyword,
+              productName: request.productName,
+              mid: null,
+              midSource: 'failed',
+              rank: null,
+              duration: Date.now() - startTime,
+              error: 'MID 추출 실패',
+            };
+          }
         }
       }
 
@@ -497,6 +508,16 @@ export class ParallelRankChecker {
 
       const result = await checkRankByProductId(page, request.keyword, mid, logPrefix);
 
+      // ✅ 순위 발견 시 상품 정보 추출
+      let productInfo: ProductInfo | null = null;
+      if (result.rank && page) {
+        productInfo = await extractProductInfo(
+          page,
+          result.catalogNvMid || mid,
+          logPrefix
+        );
+      }
+
       await browser.close();
 
       const duration = Date.now() - startTime;
@@ -509,7 +530,7 @@ export class ParallelRankChecker {
         console.log(`${logPrefix} ❌ ${result.error || '미발견'} (${Math.round(duration / 1000)}초)`);
       }
 
-      // RankResult 형식으로 변환
+      // RankResult 형식으로 변환 (상품 정보 포함)
       const rankResult: RankResult | null = result.rank ? {
         found: true,
         mid: result.catalogNvMid || mid,
@@ -520,6 +541,7 @@ export class ParallelRankChecker {
         page: result.page || 1,
         pagePosition: result.rank % 40 || 40,
         blocked: result.blocked,
+        ...productInfo,  // 7개 필드 확산
       } : null;
 
       return {

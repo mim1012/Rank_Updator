@@ -29,6 +29,14 @@ export interface RankResult {
   page: number;
   pagePosition: number;
   isAd: boolean;
+  // ✅ 상품 정보 추가 (naver_rank - 1 통합)
+  keyword_name?: string | null;
+  price?: number | null;
+  price_sale?: number | null;
+  review_count?: number | null;
+  product_image_url?: string | null;
+  star_count?: number | null;
+  month_count?: number | null;
 }
 
 export interface SaveResult {
@@ -226,6 +234,14 @@ export async function saveRankToSlotNaver(
         customer_id: keyword.customer_id || 'master',
         rank_date: now, // 순위 체크 날짜
         created_at: now,
+        // ✅ 추가 상품 정보 필드 (naver_rank - 1 통합)
+        keyword_name: rankResult?.keyword_name ?? null,
+        price: toNumber(rankResult?.price),
+        price_sale: toNumber(rankResult?.price_sale),
+        review_count: toNumber(rankResult?.review_count),
+        product_image_url: rankResult?.product_image_url ?? null,
+        star_count: toNumber(rankResult?.star_count),
+        month_count: toNumber(rankResult?.month_count),
       });
 
     if (historyError) {
